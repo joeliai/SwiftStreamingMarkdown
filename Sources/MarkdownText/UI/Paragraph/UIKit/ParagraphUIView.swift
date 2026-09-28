@@ -24,7 +24,6 @@ class ParagraphUIView: UITextView {
   static let animationDuration: CFTimeInterval = ParagraphAnimationConstants.fadeInDuration
 
   private(set) var paragraphContents: NSMutableAttributedString = NSMutableAttributedString()
-  private(set) var lineSpacing: CGFloat?
   private var activeAnimations: [FadeAnimationData] = []
   private var fadeAnimationDisplayLink: CADisplayLink?
   private var cachedSize: CachedParagraphUIViewSize?
@@ -99,35 +98,37 @@ class ParagraphUIView: UITextView {
     invalidateIntrinsicContentSize()
   }
 
-  func setParagraphContents(_ newContents: NSMutableAttributedString, lineSpacing: CGFloat? = nil, animatedByWord: Bool) {
+  func setParagraphContents(_ newContents: NSMutableAttributedString, animatedByWord: Bool) {
     // Keep the cached interface style up to date for citation preview rendering.
     // This runs on the main thread so it's safe to read traitCollection here.
     AppAppearance.update(style: traitCollection.userInterfaceStyle)
 
-    guard paragraphContents != newContents || self.lineSpacing != lineSpacing else {
+    guard paragraphContents != newContents else {
       return
     }
+    // Streamed text usually only grows: appending just the tail keeps the user's
+    // selection and the layout of the text already shown. Not when in-flight fades
+    // must be cleared, as their partial alpha lives in the text storage.
+    let isAppending = (animatedByWord || activeAnimations.isEmpty) && newContents.hasPrefix(paragraphContents)
     self.paragraphContents = newContents
-    self.lineSpacing = lineSpacing
 
     let oldAttributedString: NSAttributedString = attributedText
-    let finalString: NSMutableAttributedString
-    if lineSpacing != nil {
-      finalString = applyLineSpacing(to: newContents, lineSpacing: lineSpacing)
-    } else {
-      finalString = newContents
-    }
 
-    guard finalString != oldAttributedString else {
+    guard newContents != oldAttributedString else {
       return
     }
 
     // Stop display link update before updating the attributed string
     tearDownDisplayLink()
     invalidateCachedSize()
-    attributedText = finalString
+    if isAppending {
+      let appendedRange = NSRange(location: textStorage.length, length: newContents.length - textStorage.length)
+      textStorage.append(newContents.attributedSubstring(from: appendedRange))
+    } else {
+      attributedText = newContents
+    }
 
-    configureAccessibility(for: finalString)
+    configureAccessibility(for: newContents)
 
     invalidateIntrinsicContentSize()
 
@@ -159,14 +160,6 @@ class ParagraphUIView: UITextView {
       // If no animation needed anymore, clean up all existings animations if any.
       activeAnimations.removeAll()
     }
-  }
-
-  private func applyLineSpacing(to attributedString: NSMutableAttributedString, lineSpacing: CGFloat?) -> NSMutableAttributedString {
-    let result = NSMutableAttributedString(attributedString: attributedString)
-    if let lineSpacing {
-      result.setLineSpacing(lineSpacing)
-    }
-    return result
   }
 
   private func setupView() {
@@ -249,6 +242,16 @@ class ParagraphUIView: UITextView {
 
   /// Configure accessibility properties for the text view
   private func configureAccessibility(for attributedString: NSAttributedString) {
+    // A text group exposes one element per block, as separate views did, so
+    // VoiceOver still moves block by block and finds headings.
+    let blockElements = blockAccessibilityElements(for: attributedString)
+    isAccessibilityElement = blockElements == nil
+    accessibilityElements = blockElements
+    guard blockElements == nil else {
+      accessibilityLabel = nil
+      accessibilityCustomActions = nil
+      return
+    }
     // Generate the full accessibility content directly
     if let accessibilityContent = generateAccessibilityContent(from: attributedString) {
       // We have citations, use the generated content
@@ -259,6 +262,33 @@ class ParagraphUIView: UITextView {
       accessibilityLabel = attributedString.string
       accessibilityCustomActions = nil
     }
+  }
+
+  /// One element per `.textBlock`, or `nil` when the text isn't a text group.
+  private func blockAccessibilityElements(for attributedString: NSAttributedString) -> [UIAccessibilityElement]? {
+    var elements: [UIAccessibilityElement] = []
+    attributedString.enumerateAttribute(.textBlock, in: NSRange(location: 0, length: attributedString.length)) { value, range, _ in
+      guard let block = value as? TextBlock else { return }
+      let text = attributedString.attributedSubstring(from: range)
+      let content = generateAccessibilityContent(from: text)
+      let element = TextBlockAccessibilityElement(container: self, range: range)
+      element.accessibilityLabel = content?.label ?? text.string
+      element.accessibilityCustomActions = content?.actions
+      element.accessibilityTraits = block.headingLevel == nil ? .staticText : .header
+      elements.append(element)
+    }
+    return elements.isEmpty ? nil : elements
+  }
+
+  /// The area the characters in `range` are laid out in, in this view's coordinates.
+  func boundingRect(forCharacterRange range: NSRange) -> CGRect {
+    guard let start = position(from: beginningOfDocument, offset: range.location),
+          let end = position(from: start, offset: range.length),
+          let textRange = textRange(from: start, to: end) else {
+      return .zero
+    }
+    let rect = selectionRects(for: textRange).reduce(CGRect.null) { $0.union($1.rect) }
+    return rect.isNull ? .zero : rect
   }
 
   @objc private func updateFadeAnimation() {
@@ -379,12 +409,18 @@ extension ParagraphUIView: UITextViewDelegate {
   }
 }
 
-fileprivate extension NSMutableAttributedString {
-  func setLineSpacing(_ lineSpacing: CGFloat) {
-    let paragraphStyle = NSMutableParagraphStyle()
-    paragraphStyle.lineSpacing = lineSpacing
-    paragraphStyle.alignment = .left
-    addAttribute(.paragraphStyle, value: paragraphStyle, range: NSRange(location: 0, length: length))
+/// A block of a text group, framed by where its text is laid out.
+private final class TextBlockAccessibilityElement: UIAccessibilityElement {
+  private let range: NSRange
+
+  init(container: ParagraphUIView, range: NSRange) {
+    self.range = range
+    super.init(accessibilityContainer: container)
+  }
+
+  override var accessibilityFrameInContainerSpace: CGRect {
+    get { (accessibilityContainer as? ParagraphUIView)?.boundingRect(forCharacterRange: range) ?? .zero }
+    set { super.accessibilityFrameInContainerSpace = newValue }
   }
 }
 #endif

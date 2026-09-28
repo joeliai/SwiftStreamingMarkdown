@@ -11,6 +11,10 @@ import AppKit
 #endif
 
 extension NSAttributedString {
+  func hasPrefix(_ prefix: NSAttributedString) -> Bool {
+    length >= prefix.length && attributedSubstring(from: NSRange(location: 0, length: prefix.length)).isEqual(to: prefix)
+  }
+
   func splitIntoWords(withIn range: NSRange) -> [NSRange] {
     var words: [NSRange] = []
     let string = self.string as NSString
@@ -65,5 +69,17 @@ extension NSAttributedString {
     }
 
     return words
+  }
+}
+
+extension NSMutableAttributedString {
+  /// Updates the paragraph style of every run in `range` (the whole string by
+  /// default), keeping properties set by earlier passes.
+  func updateParagraphStyle(in range: NSRange? = nil, _ update: (NSMutableParagraphStyle) -> Void) {
+    enumerateAttribute(.paragraphStyle, in: range ?? NSRange(location: 0, length: length)) { value, runRange, _ in
+      let paragraphStyle = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+      update(paragraphStyle)
+      addAttribute(.paragraphStyle, value: paragraphStyle, range: runRange)
+    }
   }
 }

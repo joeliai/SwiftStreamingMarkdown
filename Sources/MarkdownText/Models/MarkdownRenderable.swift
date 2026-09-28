@@ -20,7 +20,8 @@ indirect enum MarkdownRenderable: Identifiable, Equatable, @unchecked Sendable {
 
   /// Adjacent top-level headings and paragraphs rendered in a single text view
   /// so a text selection can span them. `content` joins the `blocks` with
-  /// paragraph breaks, keeping `blockSpacing` between them. See `groupingAdjacentTextBlocks(config:)`.
+  /// paragraph breaks spaced by `blockSpacing`, or by the line spacing where
+  /// that's larger. See `groupingAdjacentTextBlocks(config:)`.
   case textGroup(id: String, blocks: [MarkdownRenderable], content: NSMutableAttributedString)
 
   /// To be rendered as LaTeX (Math formatting)

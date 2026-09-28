@@ -124,6 +124,7 @@ class ParagraphNSView: NSTextView {
     // selection and the layout of the text already shown. Not when in-flight fades
     // must be cleared, as their partial alpha lives in the text storage.
     let isAppending = (animatedByWord || activeAnimations.isEmpty) && newContents.hasPrefix(paragraphContents)
+    let oldContents = paragraphContents
     self.paragraphContents = newContents
 
     let oldLength = textStorage?.length ?? 0
@@ -133,7 +134,12 @@ class ParagraphNSView: NSTextView {
     if isAppending {
       textStorage?.append(newContents.attributedSubstring(from: NSRange(location: oldLength, length: newContents.length - oldLength)))
     } else {
+      let selection = selectedRange()
       textStorage?.setAttributedString(newContents)
+      // Replacing the text resets the selection; keep it if the text up to its end is unchanged.
+      if selection.length > 0, oldContents.hasSameText(through: selection, as: newContents) {
+        setSelectedRange(selection)
+      }
     }
 
     configureAccessibility(for: newContents)

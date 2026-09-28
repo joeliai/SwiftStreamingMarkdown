@@ -26,6 +26,23 @@ final class TextGroupTests: XCTestCase {
     return (blocks, content)
   }
 
+  /// The content of the document's first block, whether or not it's a group.
+  private func textContent(_ text: String) async -> NSMutableAttributedString {
+    switch await renderableDocument(for: text).renderables.first {
+    case .paragraph(_, let content), .heading(_, _, let content), .textGroup(_, _, let content):
+      return content
+    default:
+      XCTFail("Expected a text block")
+      return NSMutableAttributedString()
+    }
+  }
+
+  private func paragraphSpacingBefore(_ text: String, in content: NSAttributedString) -> CGFloat? {
+    let location = (content.string as NSString).range(of: text).location
+    let style = content.attribute(.paragraphStyle, at: location, effectiveRange: nil) as? NSParagraphStyle
+    return style?.paragraphSpacingBefore
+  }
+
   // MARK: - Grouping
 
   func test_adjacentHeadingsAndParagraphs_areGroupedIntoOneRenderable() async {
@@ -48,11 +65,16 @@ final class TextGroupTests: XCTestCase {
     }
   }
 
-  func test_blockSpacingBelowLineSpacing_keepsBlocksSeparate() async {
+  /// Grouping doesn't depend on `blockSpacing`: below the line spacing, grouped
+  /// paragraphs keep the native minimum gap rather than negative spacing.
+  func test_blockSpacingBelowLineSpacing_keepsParagraphsGroupedAtLineSpacingGap() async {
     let config = MarkdownRenderConfig.default.withBlockSpacing(value: 2)
-    let renderables = await renderableDocument(for: "# Title\n\nBody.", config: config).renderables
+    guard let group = await textGroup("A first paragraph long enough to wrap onto a second line.\n\nA second paragraph.", config: config) else { return }
 
-    XCTAssertEqual(renderables.count, 2, "A paragraph break can't be spaced tighter than the line spacing")
+    let stacked = group.blocks.map(measuredHeight(ofBlock:)).reduce(MarkdownRenderable.paragraphLineSpacing, +)
+
+    XCTAssertEqual(paragraphSpacingBefore("A second paragraph.", in: group.content), 0, "Spacing below the line spacing must not go negative")
+    XCTAssertEqual(measuredHeight(of: group.content), stacked, accuracy: measurementAccuracy, "Paragraphs keep their line spacing apart")
   }
 
   func test_group_keepsFirstBlockID_asBlocksStreamIn() async {
@@ -65,15 +87,10 @@ final class TextGroupTests: XCTestCase {
   func test_blockSpacing_appliesOnlyToEachBlocksFirstLine() async {
     let config = MarkdownRenderConfig.default
     guard let group = await textGroup("First.\n\nSecond, line one\nSecond, line two", config: config) else { return }
-    func spacingBefore(_ text: String) -> CGFloat {
-      let location = (group.content.string as NSString).range(of: text).location
-      let style = group.content.attribute(.paragraphStyle, at: location, effectiveRange: nil) as? NSParagraphStyle
-      return style?.paragraphSpacingBefore ?? 0
-    }
 
-    XCTAssertEqual(spacingBefore("First."), 0)
-    XCTAssertEqual(spacingBefore("Second, line one"), config.blockSpacing - MarkdownRenderable.paragraphLineSpacing)
-    XCTAssertEqual(spacingBefore("Second, line two"), 0, "Soft-break lines belong to the same block")
+    XCTAssertEqual(paragraphSpacingBefore("First.", in: group.content), 0)
+    XCTAssertEqual(paragraphSpacingBefore("Second, line one", in: group.content), config.blockSpacing - MarkdownRenderable.paragraphLineSpacing)
+    XCTAssertEqual(paragraphSpacingBefore("Second, line two", in: group.content), 0, "Soft-break lines belong to the same block")
   }
 
   func test_plainText_keepsBlankLineBetweenGroupedBlocks() async {
@@ -152,6 +169,68 @@ final class TextGroupTests: XCTestCase {
       XCTAssertEqual(displayed, source, "A fade cut short must not leave text translucent")
     }
   }
+
+  /// Some updates rewrite text already shown, so they replace the text instead
+  /// of appending to it; a selection of text they leave unchanged must survive.
+  func test_rewritingUpdate_keepsSelectionOfUnchangedText() async {
+    let updates = [
+      // Completing a link turns "[the docs" into link text.
+      ("First paragraph.\n\nRead [the docs", "First paragraph.\n\nRead [the docs](https://example.com)"),
+      // A paragraph that becomes a group takes on the group's attributes.
+      ("First paragraph.", "First paragraph.\n\nRead")
+    ]
+    for (before, after) in updates {
+      let oldContent = await textContent(before)
+      let newContent = await textContent(after)
+
+      withHostedParagraphView { view in
+        view.setParagraphContents(oldContent, animatedByWord: false)
+        view.selection = NSRange(location: 0, length: 16)
+
+        view.setParagraphContents(newContent, animatedByWord: true)
+
+        XCTAssertEqual(view.displayedText.string, newContent.string)
+        XCTAssertEqual(view.selection, NSRange(location: 0, length: 16), "Selection lost updating '\(before)' to '\(after)'")
+      }
+    }
+  }
+
+  func test_rewritingUpdate_dropsSelectionOfChangedText() async {
+    let oldContent = await textContent("First paragraph.\n\nRead [the docs")
+    let newContent = await textContent("First paragraph.\n\nRead [the docs](https://example.com)")
+
+    withHostedParagraphView { view in
+      view.setParagraphContents(oldContent, animatedByWord: false)
+      view.selection = NSRange(location: 17, length: 9) // "Read [the"
+
+      view.setParagraphContents(newContent, animatedByWord: true)
+
+      XCTAssertEqual(view.selection.length, 0, "The selected text changed, so the selection can't carry over")
+    }
+  }
+
+  #if canImport(UIKit)
+  func test_selectAll_isOfferedUntilAllTextIsSelected() async {
+    let content = await textContent("# Title\n\nBody text.")
+    let selectAll = #selector(UIResponderStandardEditActions.selectAll(_:))
+    let all = NSRange(location: 0, length: content.length)
+
+    withHostedParagraphView { view in
+      view.setParagraphContents(content, animatedByWord: false)
+      for (selection, isOffered) in [(NSRange(location: 0, length: 0), true), (NSRange(location: 0, length: 5), true), (all, false)] {
+        view.selectedRange = selection
+        XCTAssertEqual(view.canPerformAction(selectAll, withSender: nil), isOffered, "Selection \(selection)")
+      }
+
+      view.selectedRange = NSRange(location: 0, length: 5)
+      view.selectAll(nil)
+      XCTAssertEqual(view.selectedRange, all, "UIKit's Select All must select the whole group")
+
+      view.setParagraphContents(NSMutableAttributedString(), animatedByWord: false)
+      XCTAssertFalse(view.canPerformAction(selectAll, withSender: nil), "Empty text has nothing to select")
+    }
+  }
+  #endif
 
   // MARK: - Accessibility
 

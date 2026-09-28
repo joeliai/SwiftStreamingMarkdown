@@ -64,11 +64,6 @@ extension Array where Element == MarkdownRenderable {
   /// A group keeps its first block's ID, so as streaming appends blocks
   /// SwiftUI keeps updating the same text view.
   func groupingAdjacentTextBlocks(config: MarkdownRenderConfig) -> [MarkdownRenderable] {
-    // A paragraph break can't be tighter than the line spacing, so keep
-    // separate views rather than change the layout.
-    guard config.blockSpacing >= MarkdownRenderable.paragraphLineSpacing else {
-      return self
-    }
     var result: [MarkdownRenderable] = []
     var run: [MarkdownRenderable] = []
 
@@ -94,7 +89,8 @@ extension Array where Element == MarkdownRenderable {
   }
 
   /// Joins text blocks with paragraph breaks, spaced to match the
-  /// `blockSpacing` gap that `BlockView` puts between separate blocks.
+  /// `blockSpacing` gap that `BlockView` puts between separate blocks, but
+  /// never closer than the line spacing TextKit puts at a break.
   private func joinedAsTextBlocks(config: MarkdownRenderConfig) -> NSMutableAttributedString {
     let separator = NSAttributedString(string: "\n", attributes: [.font: config.paragraphStyle.textFonts.normal])
     let result = NSMutableAttributedString()
@@ -110,7 +106,7 @@ extension Array where Element == MarkdownRenderable {
       if start > 0 {
         // Only the block's first line: later lines come from soft/hard breaks.
         let firstLine = (result.string as NSString).paragraphRange(for: NSRange(location: start, length: 0))
-        let spacing = config.blockSpacing - lineSpacingAtBreak(after: previousLineSpacing, before: block.lineSpacing)
+        let spacing = Swift.max(0, config.blockSpacing - lineSpacingAtBreak(after: previousLineSpacing, before: block.lineSpacing))
         result.updateParagraphStyle(in: firstLine) { $0.paragraphSpacingBefore = spacing }
       }
       previousLineSpacing = block.lineSpacing

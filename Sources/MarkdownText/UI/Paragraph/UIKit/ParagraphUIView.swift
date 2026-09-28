@@ -67,6 +67,16 @@ class ParagraphUIView: UITextView {
     return result
   }
 
+  // swiftlint:disable:next no_any
+  override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+    // UIKit withholds Select All from non-editable text. Offer it until all the
+    // text is selected, so a partial selection can grow to the whole group.
+    if action == #selector(UIResponderStandardEditActions.selectAll(_:)) {
+      return textStorage.length > 0 && selectedRange != NSRange(location: 0, length: textStorage.length)
+    }
+    return super.canPerformAction(action, withSender: sender)
+  }
+
   override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
     super.traitCollectionDidChange(previousTraitCollection)
     if traitCollection.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle {
@@ -125,7 +135,12 @@ class ParagraphUIView: UITextView {
       let appendedRange = NSRange(location: textStorage.length, length: newContents.length - textStorage.length)
       textStorage.append(newContents.attributedSubstring(from: appendedRange))
     } else {
+      let selection = selectedRange
       attributedText = newContents
+      // Replacing the text resets the selection; keep it if the text up to its end is unchanged.
+      if selection.length > 0, oldAttributedString.hasSameText(through: selection, as: newContents) {
+        selectedRange = selection
+      }
     }
 
     configureAccessibility(for: newContents)

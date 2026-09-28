@@ -15,6 +15,15 @@ extension NSAttributedString {
     length >= prefix.length && attributedSubstring(from: NSRange(location: 0, length: prefix.length)).isEqual(to: prefix)
   }
 
+  /// Whether `other` has the same text as this string from the start through
+  /// the end of `range`, so a selection of `range` survives changing this text to `other`.
+  func hasSameText(through range: NSRange, as other: NSAttributedString) -> Bool {
+    let end = NSMaxRange(range)
+    guard end <= length, end <= other.length else { return false }
+    let prefix = NSRange(location: 0, length: end)
+    return (string as NSString).substring(with: prefix) == (other.string as NSString).substring(with: prefix)
+  }
+
   func splitIntoWords(withIn range: NSRange) -> [NSRange] {
     var words: [NSRange] = []
     let string = self.string as NSString

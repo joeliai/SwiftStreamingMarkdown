@@ -22,6 +22,7 @@ class ParagraphNSView: NSTextView {
   private(set) var paragraphContents: NSMutableAttributedString = NSMutableAttributedString()
   private var activeAnimations: [FadeAnimationData] = []
   private var blockAccessibilityElements: [NSAccessibilityElement]?
+  private var blockElementsByID: [String: TextBlockAccessibilityElement] = [:]
   private var fadeAnimationDisplayLink: CADisplayLink?
   private var cachedSize: CachedParagraphNSViewSize?
 
@@ -228,7 +229,7 @@ class ParagraphNSView: NSTextView {
   private func configureAccessibility(for attributedString: NSAttributedString) {
     // A text group exposes one element per block, as separate views did, so
     // VoiceOver still moves block by block and finds headings.
-    blockAccessibilityElements = makeBlockAccessibilityElements(for: attributedString)
+    blockAccessibilityElements = updateBlockAccessibilityElements(for: attributedString)
     guard blockAccessibilityElements == nil else {
       setAccessibilityLabel(nil)
       return
@@ -241,18 +242,24 @@ class ParagraphNSView: NSTextView {
   }
 
   /// One element per `.textBlock`, or `nil` when the text isn't a text group.
-  private func makeBlockAccessibilityElements(for attributedString: NSAttributedString) -> [NSAccessibilityElement]? {
+  /// A block keeps its element across updates, so streaming doesn't replace
+  /// the element VoiceOver is focused on.
+  private func updateBlockAccessibilityElements(for attributedString: NSAttributedString) -> [NSAccessibilityElement]? {
+    var elementsByID: [String: TextBlockAccessibilityElement] = [:]
     var elements: [NSAccessibilityElement] = []
     attributedString.enumerateAttribute(.textBlock, in: NSRange(location: 0, length: attributedString.length)) { value, range, _ in
       guard let block = value as? TextBlock else { return }
       let text = attributedString.attributedSubstring(from: range)
-      let element = TextBlockAccessibilityElement(textView: self, range: range)
+      let element = blockElementsByID[block.id] ?? TextBlockAccessibilityElement(textView: self)
+      element.range = range
       // The raw value of NSAccessibilityHeadingRole, which is only declared from macOS 26.
       element.setAccessibilityRole(block.headingLevel == nil ? .staticText : NSAccessibility.Role(rawValue: "AXHeading"))
       element.setAccessibilityLabel(generateAccessibilityContent(from: text)?.label ?? text.string)
       element.setAccessibilityParent(self)
+      elementsByID[block.id] = element
       elements.append(element)
     }
+    blockElementsByID = elementsByID
     return elements.isEmpty ? nil : elements
   }
 
@@ -452,11 +459,10 @@ private struct ContextMenuAction {
 /// A block of a text group, framed by where its text is laid out.
 private final class TextBlockAccessibilityElement: NSAccessibilityElement {
   private weak var textView: ParagraphNSView?
-  private let range: NSRange
+  var range = NSRange(location: 0, length: 0)
 
-  init(textView: ParagraphNSView, range: NSRange) {
+  init(textView: ParagraphNSView) {
     self.textView = textView
-    self.range = range
     super.init()
   }
 

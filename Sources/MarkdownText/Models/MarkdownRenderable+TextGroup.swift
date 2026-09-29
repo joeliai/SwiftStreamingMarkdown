@@ -57,9 +57,9 @@ extension NSMutableAttributedString {
 
 extension Array where Element == MarkdownRenderable {
 
-  /// Merges each run of adjacent headings and paragraphs into a single
-  /// `.textGroup`, so the run renders in one text view and a text selection
-  /// can span it.
+  /// Merges each run of adjacent non-empty headings and paragraphs into a
+  /// single `.textGroup`, so the run renders in one text view and a text
+  /// selection can span it.
   ///
   /// A group keeps its first block's ID, so as streaming appends blocks
   /// SwiftUI keeps updating the same text view.
@@ -77,7 +77,8 @@ extension Array where Element == MarkdownRenderable {
     }
 
     for renderable in self {
-      if renderable.textBlockContent != nil {
+      // An empty block has no line to space from its neighbors, so it keeps its own view.
+      if let content = renderable.textBlockContent, content.length > 0 {
         run.append(renderable)
       } else {
         flushRun()
@@ -105,9 +106,9 @@ extension Array where Element == MarkdownRenderable {
       result.addAttribute(.textBlock, value: TextBlock(id: block.id, headingLevel: block.headingLevel), range: NSRange(location: start, length: content.length))
       if start > 0 {
         // Only the block's first line: later lines come from soft/hard breaks.
-        let firstLine = (result.string as NSString).paragraphRange(for: NSRange(location: start, length: 0))
+        let firstLine = (content.string as NSString).paragraphRange(for: NSRange(location: 0, length: 0))
         let spacing = Swift.max(0, config.blockSpacing - lineSpacingAtBreak(after: previousLineSpacing, before: block.lineSpacing))
-        result.updateParagraphStyle(in: firstLine) { $0.paragraphSpacingBefore = spacing }
+        result.updateParagraphStyle(in: NSRange(location: start + firstLine.location, length: firstLine.length)) { $0.paragraphSpacingBefore = spacing }
       }
       previousLineSpacing = block.lineSpacing
     }

@@ -65,6 +65,23 @@ final class TextGroupTests: XCTestCase {
     }
   }
 
+  /// An empty text block has no line to space from its neighbors, so it keeps
+  /// its own view and `blockSpacing`, and the blocks on either side group.
+  func test_emptyTextBlocks_endGroups() async {
+    let renderables = await renderableDocument(for: "First.\n\nSecond.\n\n#\n\nThird.\n\nFourth.").renderables
+
+    guard renderables.count == 3,
+          case .textGroup(_, let before, _) = renderables[0],
+          case .heading(_, _, let empty) = renderables[1],
+          case .textGroup(_, let after, _) = renderables[2] else {
+      return XCTFail("Expected a group, the empty heading, then a group; got \(renderables.count) blocks")
+    }
+    XCTAssertEqual([before.count, empty.length, after.count], [2, 0, 2])
+
+    let leading = await renderableDocument(for: "#\n\nBody.").renderables
+    XCTAssertEqual(leading.count, 2, "A leading empty heading keeps its own view and spacing")
+  }
+
   /// Grouping doesn't depend on `blockSpacing`: below the line spacing, grouped
   /// paragraphs keep the native minimum gap rather than negative spacing.
   func test_blockSpacingBelowLineSpacing_keepsParagraphsGroupedAtLineSpacingGap() async {
@@ -250,6 +267,25 @@ final class TextGroupTests: XCTestCase {
     }
   }
 
+  /// Replacing the element VoiceOver is focused on can interrupt reading, so a
+  /// streaming update must keep the elements of blocks already shown.
+  func test_streamingUpdate_keepsAccessibilityElementsOfExistingBlocks() async {
+    guard let first = await textGroup("# Title\n\nBody"), let second = await textGroup("# Title\n\nBody text.\n\nMore") else { return }
+
+    withHostedParagraphView { view in
+      view.setParagraphContents(first.content, animatedByWord: false)
+      let before = view.blockElements
+
+      view.setParagraphContents(second.content, animatedByWord: true)
+      let after = view.blockElements
+
+      XCTAssertEqual(after.map { $0.label }, ["Title", "Body text.", "More"], "Existing elements must reflect the new text")
+      guard before.count == 2, after.count == 3 else { return XCTFail("Expected 2 then 3 elements") }
+      XCTAssertTrue(before[0].object === after[0].object && before[1].object === after[1].object, "Existing blocks must keep their elements")
+      XCTAssertTrue(isAbove(after[1].frame, after[2].frame), "A kept element must be framed on its block's new text")
+    }
+  }
+
   func test_singleBlock_staysOneAccessibilityElement() async {
     guard case .paragraph(_, let content) = await renderableDocument(for: "Just one paragraph.").renderables.first else {
       return XCTFail("Expected a paragraph")
@@ -348,6 +384,7 @@ final class TextGroupTests: XCTestCase {
 
 /// What a text view exposes to accessibility for one block.
 private struct BlockElement {
+  let object: AnyObject
   let label: String?
   let isHeading: Bool
   let frame: CGRect
@@ -363,7 +400,7 @@ private extension ParagraphUIView {
   var isOneAccessibilityElement: Bool { isAccessibilityElement }
   var blockElements: [BlockElement] {
     (accessibilityElements as? [UIAccessibilityElement] ?? []).map {
-      BlockElement(label: $0.accessibilityLabel, isHeading: $0.accessibilityTraits.contains(.header), frame: $0.accessibilityFrameInContainerSpace)
+      BlockElement(object: $0, label: $0.accessibilityLabel, isHeading: $0.accessibilityTraits.contains(.header), frame: $0.accessibilityFrameInContainerSpace)
     }
   }
 }
@@ -386,7 +423,7 @@ private extension ParagraphNSView {
   var blockElements: [BlockElement] {
     guard !isAccessibilityElement() else { return [] }
     return (accessibilityChildren() as? [NSAccessibilityElement] ?? []).map {
-      BlockElement(label: $0.accessibilityLabel(), isHeading: $0.accessibilityRole()?.rawValue == "AXHeading", frame: $0.accessibilityFrame())
+      BlockElement(object: $0, label: $0.accessibilityLabel(), isHeading: $0.accessibilityRole()?.rawValue == "AXHeading", frame: $0.accessibilityFrame())
     }
   }
 }

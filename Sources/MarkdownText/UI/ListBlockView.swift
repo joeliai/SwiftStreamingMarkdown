@@ -89,9 +89,9 @@ final class ListBlockView: UIView, MarkdownBlockView, MarkdownLayoutInvalidating
     case .ordered:
       marker = UILabel()
     case .unordered:
-      let imageView = UIImageView()
-      imageView.contentMode = .scaleToFill
-      marker = imageView
+      let symbolView = SymbolMarkerView()
+      symbolView.tintColor = UIColor.Theme.Foreground.Primary.Primary450
+      marker = symbolView
     }
     marker.isAccessibilityElement = false
     return marker
@@ -112,7 +112,7 @@ final class ListBlockView: UIView, MarkdownBlockView, MarkdownLayoutInvalidating
       label.attributedText = NSAttributedString(string: "\(index + 1).", attributes: attributes)
       label.sizeToFit()
     case .unordered(let nestedLevel):
-      guard let imageView = marker as? UIImageView else { return }
+      guard let symbolView = marker as? SymbolMarkerView else { return }
       let symbolName: String
       let side: CGFloat
       switch item.checkbox {
@@ -123,9 +123,8 @@ final class ListBlockView: UIView, MarkdownBlockView, MarkdownLayoutInvalidating
       case nil:
         (symbolName, side) = (nestedLevel % 2 == 0 ? "circle.fill" : "circle", 4)
       }
-      imageView.image = UIImage(systemName: symbolName)
-      imageView.tintColor = UIColor.Theme.Foreground.Primary.Primary450
-      imageView.bounds.size = CGSize(width: side, height: side)
+      symbolView.setSymbol(named: symbolName)
+      symbolView.bounds.size = CGSize(width: side, height: side)
     }
   }
 
@@ -291,6 +290,114 @@ final class ListBlockView: UIView, MarkdownBlockView, MarkdownLayoutInvalidating
     let layout = Layout(width: width, frames: frames, height: y)
     cachedLayout = layout
     return layout
+  }
+
+  // MARK: - SymbolMarkerView
+
+  /// Draws an SF Symbol stretched so its glyph fills the bounds, like SwiftUI's
+  /// `Image(systemName:).resizable()`. A `UIImageView` would stretch the symbol
+  /// image's whole canvas, including the padding around the glyph, so the
+  /// glyph would come out smaller than the box.
+  private final class SymbolMarkerView: UIView {
+
+    private static let wholeImage = CGRect(x: 0, y: 0, width: 1, height: 1)
+    /// Glyph bounds as fractions of the symbol image's size, by symbol name.
+    private static var glyphRects: [String: CGRect] = [:]
+
+    private var symbolName: String?
+    private var image: UIImage?
+    private var glyphRect = SymbolMarkerView.wholeImage
+
+    override init(frame: CGRect) {
+      super.init(frame: frame)
+      isOpaque = false
+      contentMode = .redraw
+    }
+
+    required init?(coder: NSCoder) {
+      nil
+    }
+
+    func setSymbol(named name: String) {
+      guard name != symbolName, let image = UIImage(systemName: name) else { return }
+      symbolName = name
+      self.image = image
+      glyphRect = Self.glyphRect(of: image, named: name)
+      setNeedsDisplay()
+    }
+
+    override func tintColorDidChange() {
+      super.tintColorDidChange()
+      setNeedsDisplay()
+    }
+
+    override func draw(_ rect: CGRect) {
+      guard let image, let context = UIGraphicsGetCurrentContext() else { return }
+      let imageSize = CGSize(width: bounds.width / glyphRect.width, height: bounds.height / glyphRect.height)
+      // Scale through the context: `draw(in:)` with a scaled rect snaps the
+      // symbol to the pixel grid, which can be off by a pixel.
+      context.translateBy(x: -glyphRect.minX * imageSize.width, y: -glyphRect.minY * imageSize.height)
+      context.scaleBy(x: imageSize.width / image.size.width, y: imageSize.height / image.size.height)
+      image.withTintColor(tintColor).draw(in: CGRect(origin: .zero, size: image.size))
+    }
+
+    private static func glyphRect(of image: UIImage, named name: String) -> CGRect {
+      if let glyphRect = glyphRects[name] {
+        return glyphRect
+      }
+      let glyphRect = measureGlyphRect(of: image) ?? wholeImage
+      glyphRects[name] = glyphRect
+      return glyphRect
+    }
+
+    /// UIKit has no API for a symbol's glyph bounds, so this measures the
+    /// opaque area of a high-resolution rendering of `image`.
+    private static func measureGlyphRect(of image: UIImage) -> CGRect? {
+      let scale: CGFloat = 20
+      let width = Int((image.size.width * scale).rounded(.up))
+      let height = Int((image.size.height * scale).rounded(.up))
+      guard width > 0, height > 0,
+            let context = CGContext(
+              data: nil,
+              width: width,
+              height: height,
+              bitsPerComponent: 8,
+              bytesPerRow: 0,
+              space: CGColorSpaceCreateDeviceRGB(),
+              bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ),
+            let data = context.data
+      else {
+        return nil
+      }
+      // Flip to UIKit's top-left origin so that memory rows run top to bottom.
+      context.translateBy(x: 0, y: CGFloat(height))
+      context.scaleBy(x: scale, y: -scale)
+      UIGraphicsPushContext(context)
+      image.withTintColor(.black).draw(in: CGRect(origin: .zero, size: image.size))
+      UIGraphicsPopContext()
+
+      let pixels = data.assumingMemoryBound(to: UInt8.self)
+      let bytesPerRow = context.bytesPerRow
+      var minX = width, minY = height, maxX = -1, maxY = -1
+      for y in 0..<height {
+        for x in 0..<width where pixels[y * bytesPerRow + x * 4 + 3] > 127 {
+          minX = min(minX, x)
+          maxX = max(maxX, x)
+          minY = min(minY, y)
+          maxY = max(maxY, y)
+        }
+      }
+      guard minX <= maxX, minY <= maxY else {
+        return nil
+      }
+      return CGRect(
+        x: CGFloat(minX) / scale / image.size.width,
+        y: CGFloat(minY) / scale / image.size.height,
+        width: CGFloat(maxX - minX + 1) / scale / image.size.width,
+        height: CGFloat(maxY - minY + 1) / scale / image.size.height
+      )
+    }
   }
 }
 

@@ -5,7 +5,7 @@
 
 import Foundation
 import Markdown
-import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 extension Markdown.Text: InlineConvertible {
@@ -46,7 +46,7 @@ extension Markdown.Strong: InlineConvertible {
       newContainer[.font] = config.paragraphStyle.textFonts.bold ?? config.paragraphStyle.textFonts.normal
     }
     if self.parent is Paragraph && self.indexInParent == 0 && self.parent?.parent is ListItem && parent?.indexInParent == 0 {
-      newContainer[.foregroundColor] = MDColor(config.inlineStyle.boldTextColor)
+      newContainer[.foregroundColor] = config.inlineStyle.boldTextColor
     }
     self.inlineConvertibleChildren.forEach { convertible in
       str.append(convertible.convert(attributeContainer: newContainer, config: config))
@@ -122,7 +122,7 @@ extension Markdown.Link: InlineConvertible {
       // Is a real link, provided as markdown
       container[.link] = url
       container[.font] = config.inlineStyle.linkTextFont
-      container[.foregroundColor] = MDColor(config.inlineStyle.linkTextColor)
+      container[.foregroundColor] = config.inlineStyle.linkTextColor
       container[.underlineStyle] = config.inlineStyle.linkUnderlineStyle.rawValue
       return buildAttributedString()
     }
@@ -157,14 +157,9 @@ extension Markdown.InlineCode: InlineConvertible {
         .dropFirst(LaTexPreProcessorImpl.inlineCodePrefix.count)
         .dropLast(LaTexPreProcessorImpl.inlineCodeSuffix.count))
       let font = attributeContainer[NSAttributedString.Key.font] as? MDFont ?? config.paragraphStyle.textFonts.normal
-      let textColor = MDColor(config.paragraphStyle.textColor)
-      #if canImport(UIKit)
+      let textColor = config.paragraphStyle.textColor
       let lightHex = textColor.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light)).toHexString()
       let darkHex = textColor.resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark)).toHexString()
-      #elseif canImport(AppKit)
-      let lightHex = textColor.resolvedForAppearance(.aqua).toHexString()
-      let darkHex = textColor.resolvedForAppearance(.darkAqua).toHexString()
-      #endif
       let attachmentData = LatexAttachmentData(
         latex: codeContent,
         fontSize: font.pointSize,
@@ -179,10 +174,10 @@ extension Markdown.InlineCode: InlineConvertible {
     }
     var container = attributeContainer
     container[.font] = config.inlineStyle.codeTextFont
-    container[.foregroundColor] = MDColor(config.inlineStyle.codeTextColor)
-    container[.backgroundColor] = MDColor(config.inlineStyle.codeBackgroundColor)
+    container[.foregroundColor] = config.inlineStyle.codeTextColor
+    container[.backgroundColor] = config.inlineStyle.codeBackgroundColor
     container[.underlineStyle] =  NSUnderlineStyle.patternDot.rawValue
-    container[.underlineColor] = MDColor(config.inlineStyle.codeUnderlineColor)
+    container[.underlineColor] = config.inlineStyle.codeUnderlineColor
     return NSMutableAttributedString(string: codeContent).mergingAttributes(container)
   }
 }

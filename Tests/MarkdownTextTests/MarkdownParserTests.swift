@@ -10,7 +10,6 @@
 //  Created by Jun Yan on 6/13/25.
 //
 @testable import SwiftStreamingMarkdown
-import SwiftUI
 import XCTest
 
 @MainActor

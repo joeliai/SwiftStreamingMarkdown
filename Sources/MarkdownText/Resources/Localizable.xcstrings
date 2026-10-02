@@ -2128,6 +2128,18 @@
           }
         }
       }
+    },
+    "a11y_table_download": {
+      "comment": "Accessibility label for the button that downloads a table",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

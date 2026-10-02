@@ -5,7 +5,7 @@
 
 import Markdown
 @testable import SwiftStreamingMarkdown
-import SwiftUI
+import UIKit
 import XCTest
 
 @MainActor
@@ -30,10 +30,7 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
 
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: .default)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: .init()).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables)
   }
 
   func testMarkdownWithLatex() async throws {
@@ -49,10 +46,7 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     """
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: .default)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: .init()).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables)
   }
 
   func testMarkdownWithInlineLatex_uikit() async throws {
@@ -66,10 +60,7 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     """
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: .default)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: .init()).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables)
   }
 
   func testMarkdownWithComplexLatex() async throws {
@@ -100,10 +91,7 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     """
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: .default)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: .init()).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables)
   }
 
   func testLatexWithNewLines() async throws {
@@ -122,10 +110,7 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     """
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: .default)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: .init()).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables)
   }
 
   func testCompositeLatex() async throws {
@@ -149,10 +134,7 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     """
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: .default)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: .init()).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables)
   }
 
   func testLatexWithIndentation() async throws {
@@ -176,10 +158,7 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     """
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: .default)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: .init()).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables)
   }
 
   func testLatexWithSpecificSymbols() async throws {
@@ -203,10 +182,7 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
 
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: .default)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: .init()).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables)
   }
 
   func testCitations() async throws {
@@ -215,10 +191,7 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     """
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: .default)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: .init()).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables)
   }
 
   func testLatexInTable() async throws {
@@ -232,10 +205,7 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     let document = await parser.parse(text: text)
     print(document.debugDescription())
     let renderables = await RenderableDocument(document: document, config: .default)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: .init()).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables)
 
   }
 
@@ -246,14 +216,11 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     End of formula.
     """
     let config = MarkdownRenderConfig(
-      paragraphStyle: .init(textFonts: Typography.baseTextFonts, textColor: .red)
+      paragraphStyle: .init(textFonts: Typography.baseTextFonts, textColor: .systemRed)
     )
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: config)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: config).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables, config: config)
   }
 
   func testInlineLatexWithCustomColor() async throws {
@@ -261,14 +228,11 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     The solution is \\(3x^2 + 4x - 5\\) for all values.
     """
     let config = MarkdownRenderConfig(
-      paragraphStyle: .init(textFonts: Typography.baseTextFonts, textColor: .red)
+      paragraphStyle: .init(textFonts: Typography.baseTextFonts, textColor: .systemRed)
     )
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: config)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: config).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables, config: config)
   }
 
   func testMixedLatexWithCustomColor() async throws {
@@ -278,14 +242,11 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     Both should use custom color.
     """
     let config = MarkdownRenderConfig(
-      paragraphStyle: .init(textFonts: Typography.baseTextFonts, textColor: .green)
+      paragraphStyle: .init(textFonts: Typography.baseTextFonts, textColor: .systemGreen)
     )
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: config)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: config).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables, config: config)
   }
 
   func testCustomBlockSpacing() async throws {
@@ -299,9 +260,6 @@ final class MarkdownTextSnapshotTests: SnapshotTestCase {
     let config = MarkdownRenderConfig.default.withBlockSpacing(value: 10)
     let document = await parser.parse(text: text)
     let renderables = await RenderableDocument(document: document, config: config)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: config).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables, config: config)
   }
 }

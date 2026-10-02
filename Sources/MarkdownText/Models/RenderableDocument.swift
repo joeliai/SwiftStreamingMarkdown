@@ -3,17 +3,11 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import Foundation
 import Markdown
-import SwiftUI
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 /// A `MarkdownRenderConfig`-aware snapshot of a parsed markdown `Document`,
-/// ready to be handed to a `MarkdownView` for rendering. Producing one is
+/// ready to be handed to a `DocumentView` for rendering. Producing one is
 /// the heavyweight step; rendering it is cheap.
 public struct RenderableDocument: Equatable, Sendable {
   let renderables: [MarkdownRenderable]
@@ -40,11 +34,11 @@ public struct RenderableDocument: Equatable, Sendable {
 
   /// Construct a renderable wrapping a single plain-text paragraph styled
   /// with `config.paragraphStyle`. Useful for showing non-markdown text in a
-  /// `MarkdownView` without round-tripping through the parser.
+  /// `DocumentView` without round-tripping through the parser.
   public init(plainText: String, config: MarkdownRenderConfig) {
     var attributes: [NSAttributedString.Key: Any] = [
       .font: config.paragraphStyle.textFonts.normal,
-      .foregroundColor: MDColor(config.paragraphStyle.textColor)
+      .foregroundColor: config.paragraphStyle.textColor
     ]
     if let kern = config.paragraphStyle.textFonts.preferredLetterSpacing {
       attributes[.kern] = kern

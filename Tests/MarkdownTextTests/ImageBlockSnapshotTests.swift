@@ -5,13 +5,12 @@
 
 import Markdown
 @testable import SwiftStreamingMarkdown
-import SwiftUI
 import XCTest
 
 /// Snapshot coverage for block-level images parsed from Markdown. Uses the
 /// failure case — a remote image whose host is not in the allowed domains —
 /// because it resolves to a placeholder synchronously, unlike the remote and
-/// bundled loading paths whose async `.task` cannot be captured deterministically.
+/// bundled loading paths whose asynchronous loading cannot be captured deterministically.
 @MainActor
 final class ImageBlockSnapshotTests: SnapshotTestCase {
 
@@ -36,9 +35,6 @@ final class ImageBlockSnapshotTests: SnapshotTestCase {
       option: .init(speculativeRewrite: false, imageSupport: true)
     ).document
     let renderables = await RenderableDocument(document: document, config: config)
-    let view = CanvasView {
-      DocumentView(renderableDocument: renderables, config: config).padding(.horizontal, 24)
-    }
-    assert(view)
+    assertDocument(renderables, config: config)
   }
 }

@@ -5,12 +5,7 @@
 
 import Foundation
 import Markdown
-import SwiftUI
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 extension Heading: BlockConvertible {
 
@@ -38,7 +33,7 @@ extension Heading: BlockConvertible {
     if let kern = headingFont.preferredLetterSpacing {
       newContainer[.kern] = kern
     }
-    newContainer[.foregroundColor] = MDColor(config.headingStyle.textColor)
+    newContainer[.foregroundColor] = config.headingStyle.textColor
     let paragraphContent = buildParagraphContent(container: newContainer, config: config)
     return .heading(id: self.id, level: self.level, content: paragraphContent)
   }

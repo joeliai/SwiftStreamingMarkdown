@@ -2,8 +2,7 @@
 //  Copyright (c) Microsoft Corporation. All rights reserved.
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
-import Foundation
-import SwiftUI
+import UIKit
 
 /// A bundle of font variants (normal/italic/bold/boldItalic) plus optional
 /// preferred letter and line spacing values, used by `MarkdownRenderConfig`
@@ -51,26 +50,54 @@ extension TextFonts {
   }
 }
 
-extension View {
+extension TextFonts {
 
-  func font(_ font: TextFonts, bold: Bool = false, italic: Bool = false) -> some View {
-    let fontToUse: MDFont?
+  /// The variant for the requested traits, falling back to `normal` when the
+  /// variant is not provided.
+  func font(bold: Bool = false, italic: Bool = false) -> MDFont {
+    let variant: MDFont?
     if bold && italic {
-      fontToUse = font.boldItalic
+      variant = boldItalic
     } else if bold {
-      fontToUse = font.bold
+      variant = self.bold
     } else if italic {
-      fontToUse = font.italic
+      variant = self.italic
     } else {
-      fontToUse = font.normal
+      variant = normal
     }
-    let letterSpacing = font.preferredLetterSpacing
-    let extraLineSpacing: CGFloat? = font.preferredLineHeight.flatMap { lineHeight in
-      lineHeight > font.normal.lineHeight ? lineHeight - font.normal.lineHeight : nil
+    return variant ?? normal
+  }
+
+  /// The spacing to add between lines so they reach `preferredLineHeight`, or
+  /// `nil` when the font's natural line height is already tall enough.
+  var extraLineSpacing: CGFloat? {
+    guard let preferredLineHeight, preferredLineHeight > normal.lineHeight else {
+      return nil
     }
-    return self
-      .font(Font(fontToUse ?? font.normal))
-      .if(letterSpacing != nil, content: { $0.kerning(letterSpacing ?? 0) })
-      .if(extraLineSpacing != nil, content: { $0.lineSpacing(extraLineSpacing ?? 0) })
+    return preferredLineHeight - normal.lineHeight
+  }
+
+  /// Text attributes that apply the requested font variant and the preferred
+  /// letter spacing as kerning. When `appliesLineHeight` is `true`, the
+  /// preferred line height is applied as extra spacing between lines.
+  func textAttributes(
+    color: UIColor,
+    bold: Bool = false,
+    italic: Bool = false,
+    appliesLineHeight: Bool = true
+  ) -> [NSAttributedString.Key: Any] {
+    var attributes: [NSAttributedString.Key: Any] = [
+      .font: font(bold: bold, italic: italic),
+      .foregroundColor: color
+    ]
+    if let preferredLetterSpacing {
+      attributes[.kern] = preferredLetterSpacing
+    }
+    if appliesLineHeight, let extraLineSpacing {
+      let paragraphStyle = NSMutableParagraphStyle()
+      paragraphStyle.lineSpacing = extraLineSpacing
+      attributes[.paragraphStyle] = paragraphStyle
+    }
+    return attributes
   }
 }

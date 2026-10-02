@@ -4,12 +4,7 @@
 //
 
 import SwiftStreamingMarkdown
-import SwiftUI
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 enum SampleMarkdownTheme: String, CaseIterable, Identifiable {
   case automatic
@@ -32,12 +27,12 @@ enum SampleMarkdownTheme: String, CaseIterable, Identifiable {
     }
   }
 
-  func backgroundColor(for demonstration: Demonstration) -> Color {
+  func backgroundColor(for demonstration: Demonstration) -> UIColor {
     switch resolvedTheme(for: demonstration) {
     case .automatic:
       demonstration.automaticBackgroundColor
     case .system:
-      Color.systemBackground
+      .systemBackground
     case .roboto:
       RobotoTheme.pageBackground
     case .presentation:
@@ -142,20 +137,20 @@ enum SampleMarkdownTheme: String, CaseIterable, Identifiable {
 }
 
 private struct Palette {
-  let background: Color
-  let foreground: Color
-  let secondaryForeground: Color
-  let heading: Color
-  let accent: Color
-  let softAccent: Color
-  let codeForeground: Color
-  let codeBackground: Color
-  let tableHeaderBackground: Color
-  let border: Color
+  let background: UIColor
+  let foreground: UIColor
+  let secondaryForeground: UIColor
+  let heading: UIColor
+  let accent: UIColor
+  let softAccent: UIColor
+  let codeForeground: UIColor
+  let codeBackground: UIColor
+  let tableHeaderBackground: UIColor
+  let border: UIColor
   let codeBlockTheme: CodeBlockConfig.Theme
   /// Chrome background for the code block, matching the highlight theme's own
   /// light/dark background so syntax colors sit on the intended surface.
-  let codeBlockBackground: Color
+  let codeBlockBackground: UIColor
 
   static let presentation = Palette(
     background: .dynamic(light: .sampleRGB(0.95, 0.98, 1.00), dark: .sampleRGB(0.03, 0.07, 0.13)),
@@ -203,8 +198,8 @@ private struct Palette {
   )
 }
 
-private extension Color {
-  static func sampleRGB(_ red: CGFloat, _ green: CGFloat, _ blue: CGFloat) -> Color {
-    Color(red: red, green: green, blue: blue)
+private extension UIColor {
+  static func sampleRGB(_ red: CGFloat, _ green: CGFloat, _ blue: CGFloat) -> UIColor {
+    UIColor(red: red, green: green, blue: blue, alpha: 1)
   }
 }

@@ -5,7 +5,6 @@
 
 import Foundation
 import Markdown
-import SwiftUI
 
 /// A markdown block that can be converted into `MarkdownRenderable`
 

@@ -96,6 +96,13 @@ extension String {
     comment: "Accessibility label for a block image that has no alt text"
   )
 
+  static let tableDownloadLabel = NSLocalizedString(
+    "a11y_table_download",
+    bundle: .module,
+    value: "Download",
+    comment: "Accessibility label for the button that downloads a table"
+  )
+
   static let imageViewerCloseLabel = NSLocalizedString(
     "a11y_image_viewer_close",
     bundle: .module,

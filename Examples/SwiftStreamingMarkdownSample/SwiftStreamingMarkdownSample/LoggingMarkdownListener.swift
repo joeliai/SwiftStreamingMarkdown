@@ -3,26 +3,23 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import Foundation
-import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
+import Combine
 import SwiftStreamingMarkdown
+import UIKit
 
 class LoggingMarkdownListener: MarkdownListener, ObservableObject {
-  private static let streamingScrollAnimationDuration = 0.16
+  static let streamingScrollAnimationDuration = 0.16
 
   @Published var followsStreamingMarkdown: Bool = true
-  @Published var scrollPosition = ScrollPosition(edge: .top)
   /// Whether the current rendering context is a streamed source. When `false`,
   /// `onRender` callbacks will not auto-scroll, which lets the same listener
   /// be shared between streamed and static `MarkdownView`s without the static
   /// case yanking the scroll position on first render.
   @Published var isStreamingActive: Bool = false
-  var viewModel: DemonstrationViewModel?
+  weak var viewModel: DemonstrationViewModel?
+  /// Scrolls the hosting scroll view to its bottom over the given duration.
+  /// Set by `DemonstrationViewController`.
+  var scrollToBottom: ((TimeInterval) -> Void)?
   private var pendingStreamingScroll = false
 
   func onRender(markdown: RenderableDocument) async {
@@ -48,10 +45,9 @@ class LoggingMarkdownListener: MarkdownListener, ObservableObject {
     guard !pendingStreamingScroll || force else { return }
 
     pendingStreamingScroll = true
+    // Wait a turn so the newly rendered content has been laid out.
     DispatchQueue.main.async {
-      withAnimation(.linear(duration: Self.streamingScrollAnimationDuration)) {
-        self.scrollPosition.scrollTo(edge: .bottom)
-      }
+      self.scrollToBottom?(Self.streamingScrollAnimationDuration)
       DispatchQueue.main.asyncAfter(deadline: .now() + Self.streamingScrollAnimationDuration) {
         self.pendingStreamingScroll = false
       }
@@ -59,26 +55,12 @@ class LoggingMarkdownListener: MarkdownListener, ObservableObject {
   }
 
   func onTableCopyTap(content: String) async {
-    #if canImport(UIKit)
     UIPasteboard.general.string = content
     await presentCopyConfirmation()
-    #elseif canImport(AppKit)
-    NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(content, forType: .string)
-    #endif
   }
 
   func onTableDownloadTap(content: String) async {
-    #if canImport(UIKit)
     await presentShareSheet(for: content)
-    #elseif canImport(AppKit)
-    let panel = NSSavePanel()
-    panel.allowedContentTypes = [.plainText]
-    panel.nameFieldStringValue = "table.txt"
-    if panel.runModal() == .OK, let url = panel.url {
-      try? content.write(to: url, atomically: true, encoding: .utf8)
-    }
-    #endif
   }
 
   func onContextMenuAppear(id: String, selectedContent: String) async {
@@ -93,7 +75,6 @@ class LoggingMarkdownListener: MarkdownListener, ObservableObject {
     print("[MarkdownListener] onImageTap(image: \(image))")
   }
 
-  #if canImport(UIKit)
   @MainActor
   private func presentCopyConfirmation() {
     guard let presenter = topPresentingViewController() else {
@@ -150,5 +131,4 @@ class LoggingMarkdownListener: MarkdownListener, ObservableObject {
     }
     return presenter
   }
-  #endif
 }

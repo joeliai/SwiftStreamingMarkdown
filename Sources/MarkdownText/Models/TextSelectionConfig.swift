@@ -3,7 +3,7 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import SwiftUI
+import UIKit
 
 /// Configuration for the built-in "Select more text" edit-menu action and the
 /// modal it presents. The modal shows the full document as selectable text so
@@ -15,7 +15,7 @@ public struct TextSelectionConfig: Hashable, Sendable {
 
   /// Background color of the text selection modal. `nil` falls back to the
   /// bundled chat page background.
-  public let backgroundColor: Color?
+  public let backgroundColor: UIColor?
 
   /// Create a text selection configuration.
   /// - Parameters:
@@ -24,7 +24,7 @@ public struct TextSelectionConfig: Hashable, Sendable {
   ///     chat page background).
   public init(
     isEnabled: Bool = true,
-    backgroundColor: Color? = nil
+    backgroundColor: UIColor? = nil
   ) {
     self.isEnabled = isEnabled
     self.backgroundColor = backgroundColor
@@ -33,7 +33,7 @@ public struct TextSelectionConfig: Hashable, Sendable {
   /// The default text selection configuration, which uses the bundled chat
   /// page background.
   public static let `default` = TextSelectionConfig(
-    backgroundColor: Color.Theme.Background.Page.Chat.Flat
+    backgroundColor: UIColor.Theme.Background.Page.Chat.Flat
   )
 
   /// Reserved identifier for the built-in "Select more text" menu item that is

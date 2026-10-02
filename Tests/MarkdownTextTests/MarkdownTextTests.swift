@@ -3,10 +3,8 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-#if canImport(UIKit)
 import Markdown
 @testable import SwiftStreamingMarkdown
-import SwiftUI
 import UIKit
 import XCTest
 
@@ -302,4 +300,3 @@ final class MarkdownTextTests: XCTestCase {
     XCTAssertEqual(nestedItalicFont, paragraphFonts.boldItalic)
   }
 }
-#endif

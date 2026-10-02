@@ -4,7 +4,7 @@
 //
 
 @testable import SwiftStreamingMarkdown
-import SwiftUI
+import UIKit
 import XCTest
 
 final class CodeBlockConfigTests: XCTestCase {
@@ -31,8 +31,8 @@ final class CodeBlockConfigTests: XCTestCase {
   func testOriginalInitializerFunctionTypeRemainsSourceCompatible() {
     let initializer: (
       CodeBlockConfig.Theme,
-      Color?,
-      Color?
+      UIColor?,
+      UIColor?
     ) -> CodeBlockConfig = CodeBlockConfig.init
 
     let config = initializer(.default, nil, nil)

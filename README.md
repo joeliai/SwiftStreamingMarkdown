@@ -3,17 +3,17 @@
 [![CI](https://github.com/microsoft/SwiftStreamingMarkdown/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/microsoft/SwiftStreamingMarkdown/actions/workflows/ci.yml)
 [![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
 [![iOS 16+](https://img.shields.io/badge/iOS-16%2B-blue.svg)](https://developer.apple.com/ios/)
-[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue.svg)](https://developer.apple.com/macos/)
 [![SwiftPM](https://img.shields.io/badge/SwiftPM-compatible-brightgreen.svg)](https://swift.org/package-manager/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-An iOS and macOS Markdown renderer that offers smooth streaming experiences.
+A UIKit Markdown renderer for iOS that offers smooth streaming experiences.
 
 - ⚡ Smooth, high-performance streaming transitions for newly received text
 - 🧮 Native inline and block LaTeX math rendering
 - 🔗 Inline citation UI for source-grounded LLM responses
 - 🎨 Highly configurable typography, theming, and iOS context menus
 - 📊 Built-in hooks for analytics and interaction tracking
+- 📐 Pure UIKit views that self-size in `UICollectionView` cells, `UIStackView`s, and scroll views
 
 ## Catalog
 
@@ -28,9 +28,11 @@ An iOS and macOS Markdown renderer that offers smooth streaming experiences.
   - [Binary Size](#binary-size)
 - [Quick start](#quick-start)
 - [Streaming usage](#streaming-usage)
+- [Using in collection view cells](#using-in-collection-view-cells)
 - [Customizing the theme](#customizing-the-theme)
 - [Listening for events](#listening-for-events)
 - [Sample app](#sample-app)
+- [Migrating from the SwiftUI API](#migrating-from-the-swiftui-api)
 - [Development](#development)
 - [Contributing](#contributing)
 - [Security](#security)
@@ -185,31 +187,42 @@ Integrating `SwiftStreamingMarkdown` adds approximately **1 MB** to your app's A
 
 ## Quick start
 
-The simplest entry point is `MarkdownView`, which parses and renders a static
-string of Markdown using the default theme:
+The simplest entry point is `MarkdownView`, a `UIView` that parses a string of
+Markdown off the main thread and renders it using the default theme:
 
 ```swift
-import SwiftUI
 import SwiftStreamingMarkdown
+import UIKit
 
-struct ContentView: View {
-  var body: some View {
-    ScrollView {
-      MarkdownView(text: """
-      # Hello, **world!**
+final class ContentViewController: UIViewController {
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    view.backgroundColor = .systemBackground
 
-      SwiftStreamingMarkdown supports tables, lists, code blocks, and
-      inline `code`.
+    let markdownView = MarkdownView(text: """
+    # Hello, **world!**
 
-      ```swift
-      print("Hello, world!")
-      ```
-      """)
-      .padding()
-    }
+    SwiftStreamingMarkdown supports tables, lists, code blocks, and
+    inline `code`.
+
+    ```swift
+    print("Hello, world!")
+    ```
+    """)
+    markdownView.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(markdownView)
+    NSLayoutConstraint.activate([
+      markdownView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+      markdownView.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+      markdownView.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
+    ])
   }
 }
 ```
+
+The view sizes itself to its content: pin its width and it reports its height
+through Auto Layout (`intrinsicContentSize`), or measure it directly with
+`sizeThatFits(_:)`. Update `text` at any time to re-render.
 
 ## Streaming usage
 
@@ -217,32 +230,85 @@ For chat-style UIs that grow the Markdown source over time, use
 `StreamedMarkdownView`. It takes a `StreamedMarkdownSource` whose `text`
 property yields progressively larger snapshots of the Markdown source (each
 emission is the full source so far, not a delta) and incrementally parses
-and renders them as they arrive.
+and renders them as they arrive. The view consumes the source while it is in a
+window.
 
 ```swift
-import SwiftUI
 import SwiftStreamingMarkdown
+import UIKit
 
-class ChatResponseSource: ObservableObject, StreamedMarkdownSource {
+final class ChatResponseSource: StreamedMarkdownSource {
   var text: AsyncStream<String> { ... }
 }
 
-struct ChatBubble: View {
-  @EnvironmentObject var source: ChatResponseSource
+let responseView = StreamedMarkdownView(source: ChatResponseSource())
+```
 
-  var body: some View {
-    StreamedMarkdownView(source: source)
-  }
+If you'd rather drive the rendering yourself, parse each snapshot with
+`MarkdownParser.parse(text:config:)` and assign the resulting
+`RenderableDocument` to a `DocumentView`. Blocks whose content did not change
+keep their views, so each update only re-renders what changed:
+
+```swift
+let parser = MarkdownParserImpl()
+let documentView = DocumentView()
+
+for await snapshot in source.text {
+  documentView.renderableDocument = await parser.parse(text: snapshot, config: .default)
 }
 ```
 
-If you'd rather drive `DocumentView` directly, parse each snapshot with
-`MarkdownParser.parse(text:config:)` and feed the resulting
-`RenderableDocument` into your view yourself.
-
 The bundled [sample app](Examples/SwiftStreamingMarkdownSample) demonstrates
-chunked streaming end-to-end with adjustable chunk size and interval, plus
-auto-scroll wired through a `MarkdownListener`.
+chunked streaming end-to-end with adjustable speed, plus auto-scroll wired
+through a `MarkdownListener`.
+
+## Using in collection view cells
+
+`DocumentView`, `MarkdownView`, and `StreamedMarkdownView` work as the
+content of self-sizing `UICollectionView` cells. Pin the view to the cell's
+`contentView` (or to a bubble inside it) and give the layout an estimated
+height:
+
+```swift
+final class ResponseCell: UICollectionViewCell {
+  let documentView = DocumentView()
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    documentView.translatesAutoresizingMaskIntoConstraints = false
+    contentView.addSubview(documentView)
+    NSLayoutConstraint.activate([
+      documentView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+      documentView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
+      documentView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+      documentView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16)
+    ])
+  }
+
+  required init?(coder: NSCoder) { nil }
+
+  override func prepareForReuse() {
+    super.prepareForReuse()
+    documentView.prepareForReuse()
+  }
+}
+
+// In the cell registration or `cellForItemAt`:
+cell.documentView.renderableDocument = document
+```
+
+When the rendered height changes — a streamed update, a loaded image, an
+expanded table — the view invalidates the enclosing cell, so collection and
+table views with self-sizing invalidation (the iOS 16+ default) resize the
+cell automatically. To stream into a visible cell, reconfigure its item
+(`NSDiffableDataSourceSnapshot.reconfigureItems(_:)`) or assign the new
+document to its `DocumentView` directly.
+
+Blocks are matched across updates by their position in the document, so call
+`prepareForReuse()` on `DocumentView` or `MarkdownView` when a reused cell
+shows a different message; otherwise per-block state, such as a table's
+expanded actions, would carry over. `StreamedMarkdownView` resets itself when
+you assign a new `source`. The sample app's LLM chat shows the complete setup.
 
 ## Customizing the theme
 
@@ -277,17 +343,47 @@ final class AnalyticsListener: MarkdownListener {
 MarkdownView(text: source, listener: AnalyticsListener())
 ```
 
-The listener is propagated through the SwiftUI environment, so deeply nested
-rendered subviews observe the same hooks.
+Every block rendered by the view, including nested lists, tables, and images,
+reports to the same listener.
+
+Tapped links and citations open with `UIApplication.shared.open(_:)` by
+default. Set `openURL` on the view to handle them yourself, for example to
+open them in an in-app browser:
+
+```swift
+markdownView.openURL = { [weak self] url in
+  self?.present(SFSafariViewController(url: url), animated: true)
+}
+```
 
 ## Sample app
 
-A SwiftUI sample app lives in
+A UIKit sample app lives in
 [`Examples/SwiftStreamingMarkdownSample`](Examples/SwiftStreamingMarkdownSample).
-It includes a streaming demonstration with adjustable chunk size and interval,
-a settings screen, and a logging `MarkdownListener` implementation. The sample
+It includes streaming demonstrations with playback controls and live metrics,
+an LLM chat built on a `UICollectionView` with self-sizing cells, a settings
+screen, and a logging `MarkdownListener` implementation. The sample
 Xcode project is generated from `Examples/SwiftStreamingMarkdownSample/project.yml`;
 run `make sample-project` to generate and open it in Xcode.
+
+## Migrating from the SwiftUI API
+
+SwiftStreamingMarkdown is now UIKit-only and iOS-only:
+
+- `MarkdownView`, `StreamedMarkdownView`, and `DocumentView` are `UIView`
+  subclasses with the same initializers. Their inputs (`text`, `source`,
+  `renderableDocument`, `config`, `listener`) are settable properties, so one
+  view can be reused, for example in a cell.
+- Colors in `MarkdownRenderConfig`, `CodeBlockConfig`, and
+  `TextSelectionConfig` are `UIColor`. `Color.dynamic(light:dark:)` is now
+  `UIColor.dynamic(light:dark:)`.
+- The `markdownConfig` and `markdownController` environment values are gone;
+  pass the config and listener to the view. Instead of overriding the
+  `openURL` environment value, set the view's `openURL` property.
+- macOS is no longer supported.
+
+To show Markdown in a SwiftUI app, wrap one of the views in a
+`UIViewRepresentable`.
 
 ## Development
 

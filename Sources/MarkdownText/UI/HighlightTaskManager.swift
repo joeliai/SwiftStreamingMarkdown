@@ -6,7 +6,7 @@
 import Foundation
 import HighlightSwift
 
-actor HighlightTaskManager: ObservableObject {
+actor HighlightTaskManager {
   /// Shared Highlight instance to avoid creating multiple JSContext/HLJS instances.
   /// Each Highlight() creates its own JSContext and evaluates highlight.min.js (~600KB).
   /// When multiple CodeBlockViews render concurrently, N separate JSContexts cause

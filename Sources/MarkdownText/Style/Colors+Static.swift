@@ -5,12 +5,12 @@
 
 // swiftlint:disable type_name
 
-import SwiftUI
+import UIKit
 
-extension Color {
+extension UIColor {
   enum Static {
     enum Stone {
-      static let Stone350 = Color("Colors/Copilot/Static/Stone/350", bundle: .module)
+      static let Stone350 = UIColor.moduleColor("Colors/Copilot/Static/Stone/350")
     }
   }
 }

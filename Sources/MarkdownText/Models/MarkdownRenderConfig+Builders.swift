@@ -3,8 +3,7 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import Foundation
-import SwiftUI
+import UIKit
 
 extension MarkdownRenderConfig {
   /// Returns a copy with `shouldAnimateText` replaced.
@@ -219,7 +218,7 @@ extension MarkdownRenderConfig {
   }
 
   /// Returns a copy with `thematicBreakColor` replaced.
-  public func withThematicBreakColor(value: Color) -> MarkdownRenderConfig {
+  public func withThematicBreakColor(value: UIColor) -> MarkdownRenderConfig {
     MarkdownRenderConfig(
       shouldAnimateText: shouldAnimateText,
       blockQuoteStyle: blockQuoteStyle,

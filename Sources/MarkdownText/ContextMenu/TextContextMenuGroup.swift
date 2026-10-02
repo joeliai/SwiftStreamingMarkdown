@@ -3,11 +3,7 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 /// A grouping of related `TextContextMenuItem`s rendered as either a submenu
 /// or an inline section within `TextContextMenu`.

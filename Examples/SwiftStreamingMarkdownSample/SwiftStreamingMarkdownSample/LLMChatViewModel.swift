@@ -6,7 +6,8 @@
 import Foundation
 import SwiftStreamingMarkdown
 
-/// Presentation state for `LLMChatView`: the chat transcript and draft input.
+/// Presentation state for `LLMChatViewController`: the chat transcript and
+/// draft input.
 /// All send/streaming logic lives in `LLMChatInteractor`; this type only holds
 /// state and exposes main-actor mutations the interactor drives.
 @MainActor
@@ -45,7 +46,7 @@ final class LLMChatViewModel: ObservableObject {
 }
 
 struct ChatMessage: Identifiable {
-  enum Content {
+  enum Content: Equatable {
     case user(String)
     case assistant(RenderableDocument)
   }

@@ -3,9 +3,8 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-#if canImport(UIKit)
 import SnapshotTesting
-import SwiftUI
+import UIKit
 import XCTest
 
 /// Device variant model needed for Snapshot testing
@@ -13,7 +12,7 @@ import XCTest
 public struct IOSVariant {
   let title: DeviceName
   let snapshot: Snapshotting<UIViewController, UIImage>
-  let colorScheme: ColorScheme
+  let userInterfaceStyle: UIUserInterfaceStyle
 }
 
 extension IOSVariant {
@@ -26,22 +25,15 @@ extension IOSVariant {
   }
 
   var name: String {
-    "\(title.rawValue)-\(colorScheme.description)-\(regionCode)-\(languageCode)"
+    "\(title.rawValue)-\(userInterfaceStyle.snapshotName)-\(regionCode)-\(languageCode)"
   }
 }
 
 // MARK: - Convenience Extension
 
-private extension ColorScheme {
-  var description: String {
-    switch self {
-    case .light:
-      return "light"
-    case .dark:
-      return "dark"
-    @unknown default:
-      fatalError()
-    }
+private extension UIUserInterfaceStyle {
+  var snapshotName: String {
+    self == .dark ? "dark" : "light"
   }
 }
 
@@ -51,27 +43,27 @@ extension IOSVariant {
   enum Vertical {
     static func iPhone16(
       size: CGFloat? = nil,
-      colorScheme: ColorScheme = .light,
+      userInterfaceStyle: UIUserInterfaceStyle = .light,
       precision: Float = 1,
       perceptualPrecision: Float = 1
     ) -> IOSVariant {
       IOSVariant(
         title: .iPhone16,
-        snapshot: .image(on: .init(config: ViewImageConfig.iPhone16(.portrait), height: size), precision: precision, perceptualPrecision: perceptualPrecision),
-        colorScheme: colorScheme
+        snapshot: .image(on: .init(config: ViewImageConfig.iPhone16(.portrait), height: size), precision: precision, perceptualPrecision: perceptualPrecision, traits: UITraitCollection(userInterfaceStyle: userInterfaceStyle)),
+        userInterfaceStyle: userInterfaceStyle
       )
     }
 
     static func iPadPro11(
       size: CGFloat? = nil,
-      colorScheme: ColorScheme = .light,
+      userInterfaceStyle: UIUserInterfaceStyle = .light,
       precision: Float = 1,
       perceptualPrecision: Float = 1
     ) -> IOSVariant {
       IOSVariant(
         title: .iPadPro11,
-        snapshot: .image(on: .init(config: .iPadPro11(.portrait), height: size), precision: precision, perceptualPrecision: perceptualPrecision),
-        colorScheme: colorScheme
+        snapshot: .image(on: .init(config: .iPadPro11(.portrait), height: size), precision: precision, perceptualPrecision: perceptualPrecision, traits: UITraitCollection(userInterfaceStyle: userInterfaceStyle)),
+        userInterfaceStyle: userInterfaceStyle
       )
     }
   }
@@ -81,14 +73,14 @@ extension IOSVariant {
   enum Horizontal {
     static func iPadPro11(
       size: CGFloat? = nil,
-      colorScheme: ColorScheme = .light,
+      userInterfaceStyle: UIUserInterfaceStyle = .light,
       precision: Float = 1,
       perceptualPrecision: Float = 1
     ) -> IOSVariant {
       IOSVariant(
         title: .iPadPro11Landscape,
-        snapshot: .image(on: .init(config: .iPadPro11(.landscape), height: size), precision: precision, perceptualPrecision: perceptualPrecision),
-        colorScheme: colorScheme
+        snapshot: .image(on: .init(config: .iPadPro11(.landscape), height: size), precision: precision, perceptualPrecision: perceptualPrecision, traits: UITraitCollection(userInterfaceStyle: userInterfaceStyle)),
+        userInterfaceStyle: userInterfaceStyle
       )
     }
   }
@@ -140,14 +132,14 @@ extension Collection where Element == IOSVariant {
       // iPhone 16, light
       IOSVariant.Vertical.iPhone16(
         size: height,
-        colorScheme: .light,
+        userInterfaceStyle: .light,
         precision: precision,
         perceptualPrecision: perceptualPrecision
       ),
       // iPhone 16, dark
       IOSVariant.Vertical.iPhone16(
         size: height,
-        colorScheme: .dark,
+        userInterfaceStyle: .dark,
         precision: precision,
         perceptualPrecision: perceptualPrecision
       )
@@ -170,18 +162,17 @@ extension Collection where Element == IOSVariant {
       // iPad Pro 11 in portrait (light)
       IOSVariant.Vertical.iPadPro11(
         size: height,
-        colorScheme: .light,
+        userInterfaceStyle: .light,
         precision: precision,
         perceptualPrecision: perceptualPrecision
       ),
       // iPad Pro 11 in landscape (dark)
       IOSVariant.Horizontal.iPadPro11(
         size: height,
-        colorScheme: .dark,
+        userInterfaceStyle: .dark,
         precision: precision,
         perceptualPrecision: perceptualPrecision
       )
     ]
   }
 }
-#endif

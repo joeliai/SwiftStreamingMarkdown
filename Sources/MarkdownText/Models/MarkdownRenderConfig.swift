@@ -3,10 +3,10 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import Foundation
-import SwiftUI
+import UIKit
 
-/// Aggregate styling and behavior configuration applied to a `MarkdownView`.
+/// Aggregate styling and behavior configuration applied to a `MarkdownView`,
+/// `StreamedMarkdownView`, or `DocumentView`.
 ///
 /// `MarkdownRenderConfig` bundles fonts, colors, citation behavior, and the
 /// optional context-menu definition into a single value passed to the view.
@@ -41,7 +41,7 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
   /// modal it presents. Enabled by default.
   public let textSelectionConfig: TextSelectionConfig
   /// Color of the horizontal rule rendered for a thematic break (`---`).
-  public let thematicBreakColor: Color
+  public let thematicBreakColor: UIColor
 
   /// Configuration controlling whether and how Markdown images are rendered as
   /// block-level content.
@@ -59,10 +59,10 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
     /// Font set used for normal, bold, and italic variants.
     public let textFonts: TextFonts
     /// Foreground color applied to the text.
-    public let textColor: Color
+    public let textColor: UIColor
 
     /// Create a text style with the given fonts and foreground color.
-    public init(textFonts: TextFonts, textColor: Color) {
+    public init(textFonts: TextFonts, textColor: UIColor) {
       self.textFonts = textFonts
       self.textColor = textColor
     }
@@ -74,18 +74,18 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
     /// Font set used in both header and body cells.
     public let textFonts: TextFonts
     /// Foreground color applied to header cell text.
-    public let headerTextColor: Color
+    public let headerTextColor: UIColor
     /// Foreground color applied to body cell text.
-    public let regularTextColor: Color
+    public let regularTextColor: UIColor
     /// Background color of the header row.
-    public let headerBackgroundColor: Color
+    public let headerBackgroundColor: UIColor
     /// Color used for table borders and dividers.
-    public let borderColor: Color
+    public let borderColor: UIColor
     /// Tint color of the action button shown in the table footer.
-    public let actionButtonColor: Color
+    public let actionButtonColor: UIColor
 
     /// Create a table style with the supplied fonts and color palette.
-    public init(textFonts: TextFonts, headerTextColor: Color, regularTextColor: Color, headerBackgroundColor: Color, borderColor: Color, actionButtonColor: Color) {
+    public init(textFonts: TextFonts, headerTextColor: UIColor, regularTextColor: UIColor, headerBackgroundColor: UIColor, borderColor: UIColor, actionButtonColor: UIColor) {
       self.textFonts = textFonts
       self.headerTextColor = headerTextColor
       self.regularTextColor = regularTextColor
@@ -110,10 +110,10 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
     /// Font set for level-6 headings.
     public let h6Font: TextFonts
     /// Foreground color shared by every heading level.
-    public let textColor: Color
+    public let textColor: UIColor
 
     /// Create a heading style with explicit fonts per level and a shared color.
-    public init(h1Font: TextFonts, h2Font: TextFonts, h3Font: TextFonts, h4Font: TextFonts, h5Font: TextFonts, h6Font: TextFonts, textColor: Color) {
+    public init(h1Font: TextFonts, h2Font: TextFonts, h3Font: TextFonts, h4Font: TextFonts, h5Font: TextFonts, h6Font: TextFonts, textColor: UIColor) {
       self.h1Font = h1Font
       self.h2Font = h2Font
       self.h3Font = h3Font
@@ -127,24 +127,24 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
   /// Styling for inline runs: bold emphasis, links, and inline code spans.
   public struct MarkdownInlineTextStyle: Hashable, Sendable {
     /// Foreground color applied to bold-emphasis runs.
-    public let boldTextColor: Color
+    public let boldTextColor: UIColor
     /// Font used for link runs.
     public let linkTextFont: MDFont
     /// Foreground color applied to link runs.
-    public let linkTextColor: Color
+    public let linkTextColor: UIColor
     /// Underline style applied to link runs.
     public let linkUnderlineStyle: NSUnderlineStyle
     /// Font used for inline code spans.
     public let codeTextFont: MDFont
     /// Foreground color applied to inline code spans.
-    public let codeTextColor: Color
+    public let codeTextColor: UIColor
     /// Background fill behind inline code spans.
-    public let codeBackgroundColor: Color
+    public let codeBackgroundColor: UIColor
     /// Underline color drawn beneath inline code spans.
-    public let codeUnderlineColor: Color
+    public let codeUnderlineColor: UIColor
 
     /// Create an inline text style with the supplied fonts and color palette.
-    public init(boldTextColor: Color, linkTextFont: MDFont, linkTextColor: Color, codeTextFont: MDFont, codeTextColor: Color, codeBackgroundColor: Color, codeUnderlineColor: Color) {
+    public init(boldTextColor: UIColor, linkTextFont: MDFont, linkTextColor: UIColor, codeTextFont: MDFont, codeTextColor: UIColor, codeBackgroundColor: UIColor, codeUnderlineColor: UIColor) {
       self.init(
         boldTextColor: boldTextColor,
         linkTextFont: linkTextFont,
@@ -158,7 +158,7 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
     }
 
     /// Create an inline text style with the supplied fonts, color palette, and link underline style.
-    public init(boldTextColor: Color, linkTextFont: MDFont, linkTextColor: Color, linkUnderlineStyle: NSUnderlineStyle, codeTextFont: MDFont, codeTextColor: Color, codeBackgroundColor: Color, codeUnderlineColor: Color) {
+    public init(boldTextColor: UIColor, linkTextFont: MDFont, linkTextColor: UIColor, linkUnderlineStyle: NSUnderlineStyle, codeTextFont: MDFont, codeTextColor: UIColor, codeBackgroundColor: UIColor, codeUnderlineColor: UIColor) {
       self.boldTextColor = boldTextColor
       self.linkTextFont = linkTextFont
       self.linkTextColor = linkTextColor
@@ -179,9 +179,9 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
     /// Font applied to the rendered citation chip.
     public let font: MDFont
     /// Foreground color of the citation chip text.
-    public let textColor: Color
+    public let textColor: UIColor
     /// Background fill of the citation chip.
-    public let backgroundColor: Color
+    public let backgroundColor: UIColor
 
     /// Create a citation configuration.
     /// - Parameters:
@@ -194,8 +194,8 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
       isEnabled: Bool = true,
       coder: CitationCoder = .default,
       font: MDFont,
-      textColor: Color,
-      backgroundColor: Color
+      textColor: UIColor,
+      backgroundColor: UIColor
     ) {
       self.isEnabled = isEnabled
       self.coder = coder
@@ -204,22 +204,22 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
       self.backgroundColor = backgroundColor
     }
 
-    /// Default citation styling derived from the bundled `Typography` and `Color.Theme` palette.
+    /// Default citation styling derived from the bundled `Typography` and `UIColor.Theme` palette.
     public static let `default` = CitationConfig(
       font: Typography.tripleExtraSmallCustom450.mdFont,
-      textColor: Color.Theme.Foreground.Primary.Primary750,
-      backgroundColor: Color.Theme.Overlay.Black.Black5
+      textColor: UIColor.Theme.Foreground.Primary.Primary750,
+      backgroundColor: UIColor.Theme.Overlay.Black.Black5
     )
   }
 
   /// Default inter-block spacing.
   public static let defaultBlockSpacing: CGFloat = 30
   /// Default color for `thematicBreakColor`.
-  public static let defaultThematicBreakColor: Color = Color.Theme.Stroke.Default.Default300
+  public static let defaultThematicBreakColor: UIColor = UIColor.Theme.Stroke.Default.Default300
   /// Default styling for `blockQuoteStyle`.
   public static let defaultBlockQuoteStyle = MarkdownTextStyle(
     textFonts: Typography.baseTextFonts,
-    textColor: Color.Theme.Foreground.Primary.Primary750
+    textColor: UIColor.Theme.Foreground.Primary.Primary750
   )
 
   /// Default styling for `headingStyle`.
@@ -230,44 +230,44 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
     h4Font: Typography.mediumTextFonts,
     h5Font: Typography.mediumTextFonts,
     h6Font: Typography.mediumTextFonts,
-    textColor: Color.Theme.Foreground.Primary.Primary750
+    textColor: UIColor.Theme.Foreground.Primary.Primary750
   )
 
   /// Default styling for `orderedListStyle`.
   public static let defaultOrderedListStyle = MarkdownTextStyle(
     textFonts: Typography.baseTextFonts,
-    textColor: Color.Theme.Foreground.Primary.Primary450
+    textColor: UIColor.Theme.Foreground.Primary.Primary450
   )
 
   /// Default styling for `paragraphStyle`.
   public static let defaultParagraphStyle = MarkdownTextStyle(
     textFonts: Typography.baseTextFonts,
-    textColor: Color.Theme.Foreground.Primary.Primary750
+    textColor: UIColor.Theme.Foreground.Primary.Primary750
   )
 
   /// Default styling for `tableStyle`.
   public static let defaultTableStyle = MarkdownTableTextStyle(
     textFonts: Typography.smallTextFonts,
-    headerTextColor: Color.Theme.Foreground.Primary.Primary750,
-    regularTextColor: Color.Theme.Foreground.Primary.Primary800,
-    headerBackgroundColor: Color.Theme.Component.Table.Background.Header,
-    borderColor: Color.Theme.Stroke.Default.Default250,
-    actionButtonColor: Color.Theme.Component.Button.Foreground.Rest
+    headerTextColor: UIColor.Theme.Foreground.Primary.Primary750,
+    regularTextColor: UIColor.Theme.Foreground.Primary.Primary800,
+    headerBackgroundColor: UIColor.Theme.Component.Table.Background.Header,
+    borderColor: UIColor.Theme.Stroke.Default.Default250,
+    actionButtonColor: UIColor.Theme.Component.Button.Foreground.Rest
   )
 
   /// Default styling for `inlineStyle`.
   public static let defaultInlineStyle = MarkdownInlineTextStyle(
-    boldTextColor: Color.Theme.Foreground.Primary.Primary750,
+    boldTextColor: UIColor.Theme.Foreground.Primary.Primary750,
     linkTextFont: Typography.baseTextFonts.normal,
-    linkTextColor: Color.Theme.Accent.Accent600,
+    linkTextColor: UIColor.Theme.Accent.Accent600,
     codeTextFont: Typography.codeTextFonts.normal,
-    codeTextColor: Color.Theme.Foreground.Primary.Primary750,
-    codeBackgroundColor: Color.Theme.Component.Table.Background.Header,
-    codeUnderlineColor: Color.Theme.Component.CodeBlock.Foreground.Header
+    codeTextColor: UIColor.Theme.Foreground.Primary.Primary750,
+    codeBackgroundColor: UIColor.Theme.Component.Table.Background.Header,
+    codeUnderlineColor: UIColor.Theme.Component.CodeBlock.Foreground.Header
   )
 
   /// Create a render config. Every parameter has a sensible default that
-  /// matches the bundled `Typography`/`Color.Theme` palette, so callers can
+  /// matches the bundled `Typography`/`UIColor.Theme` palette, so callers can
   /// override only the fields they care about.
   public init(
     shouldAnimateText: Bool = false,
@@ -282,7 +282,7 @@ public struct MarkdownRenderConfig: Hashable, Sendable {
     codeBlockConfig: CodeBlockConfig = .default,
     blockSpacing: CGFloat = MarkdownRenderConfig.defaultBlockSpacing,
     textSelectionConfig: TextSelectionConfig = .default,
-    thematicBreakColor: Color = MarkdownRenderConfig.defaultThematicBreakColor,
+    thematicBreakColor: UIColor = MarkdownRenderConfig.defaultThematicBreakColor,
     imageConfig: ImageConfig = .disabled
   ) {
     self.shouldAnimateText = shouldAnimateText

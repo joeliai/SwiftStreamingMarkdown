@@ -3,14 +3,9 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import Foundation
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
-/// Markdown element representation that is ready to be rendered by a SwiftUI View
+/// Markdown element representation that is ready to be rendered by a UIKit view
 /// The representation already have all the parsing and processing completed to minimize rendering overhead on UI thread.
 /// This data structure is not thread safe due to the usage of `NSMutableAttributedString`, this needs to be addressed as a future improvement
 indirect enum MarkdownRenderable: Identifiable, Equatable, @unchecked Sendable {

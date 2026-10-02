@@ -3,9 +3,8 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import Foundation
-import SwiftUI
 import SwiftStreamingMarkdown
+import UIKit
 
 enum Demonstration: String, CaseIterable, Identifiable, Hashable {
   case kitchenSink = "Kitchen Sink"
@@ -67,10 +66,10 @@ enum Demonstration: String, CaseIterable, Identifiable, Hashable {
     theme.renderConfig(for: self, isStreaming: isStreaming)
   }
 
-  var automaticBackgroundColor: Color {
+  var automaticBackgroundColor: UIColor {
     switch self {
     case .robotoTheme: RobotoTheme.pageBackground
-    default: Color.systemBackground
+    default: .systemBackground
     }
   }
 }

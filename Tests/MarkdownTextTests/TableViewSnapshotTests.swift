@@ -5,12 +5,7 @@
 
 import Foundation
 @testable import SwiftStreamingMarkdown
-import SwiftUI
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 import UniformTypeIdentifiers
 import XCTest
 
@@ -36,14 +31,9 @@ final class TableViewSnapshotTests: SnapshotTestCase {
 
   /// Create a LaTeX attachment with proper data encoding
   private func createLatexAttachment(latex: String, fontSize: CGFloat = 16.0) -> NSTextAttachment {
-    let textColor = MDColor(Color.Theme.Foreground.Primary.Primary750)
-    #if canImport(UIKit)
+    let textColor = UIColor.Theme.Foreground.Primary.Primary750
     let lightHex = textColor.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light)).toHexString()
     let darkHex = textColor.resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark)).toHexString()
-    #elseif canImport(AppKit)
-    let lightHex = textColor.resolvedForAppearance(.aqua).toHexString()
-    let darkHex = textColor.resolvedForAppearance(.darkAqua).toHexString()
-    #endif
     let attachmentData = LatexAttachmentData(latex: latex, fontSize: fontSize, lightTextColor: lightHex, darkTextColor: darkHex)
     let encoder = JSONEncoder()
     guard let payload = try? encoder.encode(attachmentData) else {
@@ -53,21 +43,25 @@ final class TableViewSnapshotTests: SnapshotTestCase {
     return NSTextAttachment(data: payload, ofType: UTType.data.identifier)
   }
 
-  private func createTableView(_ attributedString: NSAttributedString) -> some View {
-    CanvasView {
-      VStack(alignment: .leading) {
-        TableView(
-          headings: [NSMutableAttributedString(string: "Header")],
-          rows: [[NSMutableAttributedString(attributedString: attributedString)]]
-        )
-      }
-    }
+  /// Snapshots a single-column table whose only body cell holds `attributedString`.
+  private func assertTable(
+    _ attributedString: NSAttributedString,
+    testName: String = #function,
+    file: StaticString = #file,
+    line: UInt = #line
+  ) {
+    let table = MarkdownRenderable.table(
+      id: "table",
+      headers: [NSMutableAttributedString(string: "Header")],
+      rows: [[NSMutableAttributedString(attributedString: attributedString)]],
+      rawMarkdown: ""
+    )
+    assertBlock(table, testName: testName, file: file, line: line)
   }
 
   // MARK: - Snapshot Tests
 
-  // [Auto-disabled] Real test failure detected by CI pipeline
-  func skip_testTableCellWithAllContents() throws {
+  func testTableCellWithAllContents() throws {
     // Create content with text, citation, LaTeX, and regular link
     let mutableString = NSMutableAttributedString()
 
@@ -101,8 +95,7 @@ final class TableViewSnapshotTests: SnapshotTestCase {
     mutableString.append(linkText)
     mutableString.append(NSAttributedString(string: " for details."))
 
-    let view = createTableView(mutableString)
-    assert(view)
+    assertTable(mutableString)
   }
 
   func testTableCellWithOnlyCitation() throws {
@@ -111,12 +104,10 @@ final class TableViewSnapshotTests: SnapshotTestCase {
     let citationAttachment = createCitationAttachment(url: "source2", text: "Research Study")
     mutableString.append(NSAttributedString(attachment: citationAttachment))
 
-    let view = createTableView(mutableString)
-    assert(view)
+    assertTable(mutableString)
   }
 
-  // [Auto-disabled] Real test failure detected by CI pipeline
-  func skip_testTableCellWithCitationAndText() throws {
+  func testTableCellWithCitationAndText() throws {
     // Create content with citation and text (most common scenario)
     let mutableString = NSMutableAttributedString()
 
@@ -130,12 +121,10 @@ final class TableViewSnapshotTests: SnapshotTestCase {
     // Add text after citation
     mutableString.append(NSAttributedString(string: ", 85% of users prefer this approach."))
 
-    let view = createTableView(mutableString)
-    assert(view)
+    assertTable(mutableString)
   }
 
-  // [Auto-disabled] Real test failure detected by CI pipeline
-  func skip_testTableCellWithLongTextAndCitations() throws {
+  func testTableCellWithLongTextAndCitations() throws {
     // Test with longer content to verify wrapping and layout
     let mutableString = NSMutableAttributedString()
 
@@ -151,12 +140,10 @@ final class TableViewSnapshotTests: SnapshotTestCase {
 
     mutableString.append(NSAttributedString(string: " confirms these findings with even more detailed analysis."))
 
-    let view = createTableView(mutableString)
-    assert(view)
+    assertTable(mutableString)
   }
 
-  // [Auto-disabled] Real test failure detected by CI pipeline
-  func skip_testTableCellWithMixedFormattingAndCitations() throws {
+  func testTableCellWithMixedFormattingAndCitations() throws {
     // Test with bold, italic text and citations
     let mutableString = NSMutableAttributedString()
 
@@ -169,17 +156,12 @@ final class TableViewSnapshotTests: SnapshotTestCase {
     mutableString.append(NSAttributedString(attachment: citation))
 
     // Add italic text
-    #if canImport(UIKit)
     let italicFont = MDFont.italicSystemFont(ofSize: 16)
-    #elseif canImport(AppKit)
-    let italicFont = NSFontManager.shared.convert(NSFont.systemFont(ofSize: 16), toHaveTrait: .italicFontMask)
-    #endif
     let italicText = NSAttributedString(string: " provides crucial insights", attributes: [.font: italicFont])
     mutableString.append(italicText)
 
     mutableString.append(NSAttributedString(string: " for our analysis."))
 
-    let view = createTableView(mutableString)
-    assert(view)
+    assertTable(mutableString)
   }
 }

@@ -3,7 +3,6 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-#if canImport(UIKit)
 import CoreGraphics
 import SnapshotTesting
 import UIKit
@@ -66,4 +65,3 @@ private extension CGSize {
     self.init(width: width, height: height)
   }
 }
-#endif

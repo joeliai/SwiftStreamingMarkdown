@@ -5,7 +5,6 @@
 
 import Foundation
 import Markdown
-import SwiftUI
 
 extension OrderedList: BlockConvertible {
 

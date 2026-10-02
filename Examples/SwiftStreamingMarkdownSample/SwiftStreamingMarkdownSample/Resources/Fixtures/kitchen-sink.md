@@ -154,14 +154,13 @@ Container directives from Markdown-it and GitHub-style alerts are extension synt
 
 ```swift
 import SwiftStreamingMarkdown
-import SwiftUI
+import UIKit
 
-struct PreviewRow: View {
-  let markdown: String
+final class PreviewViewController: UIViewController {
+  private let markdownView = MarkdownView()
 
-  var body: some View {
-    MarkdownView(text: markdown)
-      .padding(.horizontal, 16)
+  func show(markdown: String) {
+    markdownView.text = markdown
   }
 }
 ```

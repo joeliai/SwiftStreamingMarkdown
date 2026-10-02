@@ -6,7 +6,7 @@
 import Foundation
 import SwiftStreamingMarkdown
 
-final class LLMChatInteractor: ObservableObject {
+final class LLMChatInteractor {
   /// Shared render config, also handed to `DocumentView` so on-screen styling
   /// matches how each `RenderableDocument` was parsed.
   let markdownConfig = MarkdownRenderConfig.default
@@ -80,13 +80,13 @@ final class LLMChatInteractor: ObservableObject {
 
     ```swift
     import SwiftStreamingMarkdown
-    import SwiftUI
+    import UIKit
 
-    struct ResponseView: View {
-      let document: RenderableDocument
+    final class ResponseCell: UICollectionViewCell {
+      private let documentView = DocumentView()
 
-      var body: some View {
-        DocumentView(renderableDocument: document)
+      func configure(with document: RenderableDocument) {
+        documentView.renderableDocument = document
       }
     }
     ```

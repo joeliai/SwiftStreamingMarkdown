@@ -3,11 +3,7 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 extension MDColor {
   convenience init?(hex: String) {
@@ -60,16 +56,9 @@ extension MDColor {
     var blue: CGFloat = 0
     var alpha: CGFloat = 0
 
-    #if canImport(AppKit) && !canImport(UIKit)
-    guard let rgbColor = usingColorSpace(.sRGB) else {
-      return "#000000"
-    }
-    rgbColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-    #else
     guard getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
       return "#000000"
     }
-    #endif
 
     let r = Int((red * 255.0).rounded())
     let g = Int((green * 255.0).rounded())

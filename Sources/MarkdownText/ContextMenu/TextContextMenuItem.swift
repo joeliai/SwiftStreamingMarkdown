@@ -3,11 +3,7 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 /// A single tappable item shown inside a `TextContextMenuGroup`.
 public struct TextContextMenuItem: Identifiable, Hashable, Sendable {

@@ -3,15 +3,14 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-#if canImport(UIKit)
 import Foundation
 import Markdown
 @testable import SwiftStreamingMarkdown
-import SwiftUI
 import Testing
 import UIKit
 
-@Suite("ParagraphView Tests")
+@Suite("ParagraphUIView Tests")
+@MainActor
 struct ParagraphViewTests {
 
   // MARK: - Helper Methods
@@ -37,13 +36,11 @@ struct ParagraphViewTests {
     return result
   }
 
-  /// Helper to create ParagraphView from NSAttributedString (for testing table cell functionality)
-  private func createParagraphView(from attributedString: NSAttributedString) -> ParagraphView {
-    let mutableAttributedString = NSMutableAttributedString(attributedString: attributedString)
-    return ParagraphView(
-      contents: mutableAttributedString,
-      lineSpacing: nil
-    )
+  /// Helper to create a ParagraphUIView from NSAttributedString (for testing table cell functionality)
+  private func createParagraphView(from attributedString: NSAttributedString) -> ParagraphUIView {
+    let paragraphView = ParagraphUIView()
+    paragraphView.setParagraphContents(NSMutableAttributedString(attributedString: attributedString), animatedByWord: false)
+    return paragraphView
   }
 
   // MARK: - Functional Tests
@@ -57,10 +54,10 @@ struct ParagraphViewTests {
     let paragraphView = createParagraphView(from: attributedString)
 
     // Test functional aspects
-    #expect(paragraphView.contents.length > 0, "ParagraphView should have contents")
+    #expect(paragraphView.paragraphContents.length > 0, "ParagraphView should have contents")
 
     // Verify citation attachment exists in the content
-    let textContent = paragraphView.contents
+    let textContent = paragraphView.paragraphContents
     var citationFound = false
     textContent.enumerateAttribute(NSAttributedString.Key.attachment, in: NSRange(location: 0, length: textContent.length), options: []) { (attachment, _, _) in
       if let citationAttachment = attachment as? InlineCitationAttachment,
@@ -84,9 +81,9 @@ struct ParagraphViewTests {
     let paragraphView = createParagraphView(from: attributedString)
 
     // Should have text content
-    #expect(paragraphView.contents.length > 0, "ParagraphView should have contents")
+    #expect(paragraphView.paragraphContents.length > 0, "ParagraphView should have contents")
 
-    let textContent = paragraphView.contents
+    let textContent = paragraphView.paragraphContents
     // Should have both text and citation
     #expect(textContent.string.contains("LeBron scored 30 points according to"), "Should contain regular text")
 
@@ -122,9 +119,9 @@ struct ParagraphViewTests {
     let paragraphView = createParagraphView(from: attributedString)
 
     // Should have text content
-    #expect(paragraphView.contents.length > 0, "ParagraphView should have contents")
+    #expect(paragraphView.paragraphContents.length > 0, "ParagraphView should have contents")
 
-    let textContent = paragraphView.contents
+    let textContent = paragraphView.paragraphContents
     // Should have text, link, and citation
     var hasLink = false
     var hasCitation = false
@@ -153,9 +150,9 @@ struct ParagraphViewTests {
     let paragraphView = createParagraphView(from: attributedString)
 
     // Should have text content
-    #expect(paragraphView.contents.length > 0, "ParagraphView should have contents")
+    #expect(paragraphView.paragraphContents.length > 0, "ParagraphView should have contents")
 
-    let textContent = paragraphView.contents
+    let textContent = paragraphView.paragraphContents
     // Count citation attachments
     var citationCount = 0
     var espnFound = false
@@ -187,7 +184,7 @@ struct ParagraphViewTests {
     let paragraphView = createParagraphView(from: attributedString)
 
     // Should handle empty content correctly
-    let textContent = paragraphView.contents
+    let textContent = paragraphView.paragraphContents
     #expect(textContent.length == 0, "Empty string should remain empty")
     #expect(textContent.string == "", "Text content should be empty")
   }
@@ -199,9 +196,9 @@ struct ParagraphViewTests {
     let paragraphView = createParagraphView(from: attributedString)
 
     // Should have text content
-    #expect(paragraphView.contents.length > 0, "ParagraphView should have contents")
+    #expect(paragraphView.paragraphContents.length > 0, "ParagraphView should have contents")
 
-    let textContent = paragraphView.contents
+    let textContent = paragraphView.paragraphContents
     #expect(textContent.length > 0, "Long text should not be empty")
     #expect(textContent.string.contains("This is a very long text"), "Should contain original text")
   }
@@ -213,9 +210,9 @@ struct ParagraphViewTests {
     let paragraphView = createParagraphView(from: attributedString)
 
     // Should have text content
-    #expect(paragraphView.contents.length > 0, "ParagraphView should have contents")
+    #expect(paragraphView.paragraphContents.length > 0, "ParagraphView should have contents")
 
-    let textContent = paragraphView.contents
+    let textContent = paragraphView.paragraphContents
     #expect(textContent.string.contains("🧮"), "Should preserve emojis")
     #expect(textContent.string.contains("émojis"), "Should preserve unicode characters")
     #expect(textContent.string.contains("±∞≤≥∑∫"), "Should preserve mathematical symbols")
@@ -242,9 +239,9 @@ struct ParagraphViewTests {
     let paragraphView = createParagraphView(from: attributedString)
 
     // Should have text content
-    #expect(paragraphView.contents.length > 0, "ParagraphView should have contents")
+    #expect(paragraphView.paragraphContents.length > 0, "ParagraphView should have contents")
 
-    let textContent = paragraphView.contents
+    let textContent = paragraphView.paragraphContents
     // Verify all content types exist
     var hasLink = false
     var hasCitation = false
@@ -272,9 +269,9 @@ struct ParagraphViewTests {
     let paragraphView = createParagraphView(from: citation)
 
     // Should have text content
-    #expect(paragraphView.contents.length > 0, "ParagraphView should have contents")
+    #expect(paragraphView.paragraphContents.length > 0, "ParagraphView should have contents")
 
-    let textContent = paragraphView.contents
+    let textContent = paragraphView.paragraphContents
     var citationData: InlineAttachmentData?
     textContent.enumerateAttribute(NSAttributedString.Key.attachment, in: NSRange(location: 0, length: textContent.length), options: []) { (attachment, _, _) in
       if let citationAttachment = attachment as? InlineCitationAttachment {
@@ -287,5 +284,38 @@ struct ParagraphViewTests {
     #expect(citationData?.accessibilityLabel == "Test Source", "Should preserve accessibility label")
     #expect(citationData?.url != nil, "Should have valid URL")
   }
+
+  // MARK: - Measurement
+
+  /// Paragraphs are measured with `sizeThatFits(_:)` before they get a frame
+  /// (e.g. while a self-sizing cell is measured). Measurement must honor the
+  /// requested width regardless of the view's own frame.
+  @Test("Measures a non-zero, width-dependent height without a frame")
+  func measuresHeightWithoutFrame() {
+    let paragraphView = createParagraphView(from: NSAttributedString(string: String(repeating: "word ", count: 200)))
+
+    let narrow = paragraphView.sizeThatFits(CGSize(width: 200, height: CGFloat.greatestFiniteMagnitude))
+    let wide = paragraphView.sizeThatFits(CGSize(width: 1000, height: CGFloat.greatestFiniteMagnitude))
+
+    #expect(narrow.height > 0, "Wrapping content must have a non-zero height even without a frame")
+    #expect(wide.height > 0, "Wrapping content must have a non-zero height even without a frame")
+    #expect(
+      narrow.height > wide.height,
+      "A narrower width must wrap to more lines and therefore be taller, proving the requested width is honored"
+    )
+  }
+
+  @Test("Re-measures after the content changes")
+  func remeasuresAfterContentChange() {
+    let paragraphView = createParagraphView(from: NSAttributedString(string: "short"))
+    let proposal = CGSize(width: 200, height: CGFloat.greatestFiniteMagnitude)
+    let shortHeight = paragraphView.sizeThatFits(proposal).height
+
+    paragraphView.setParagraphContents(
+      NSMutableAttributedString(string: String(repeating: "word ", count: 100)),
+      animatedByWord: false
+    )
+
+    #expect(paragraphView.sizeThatFits(proposal).height > shortHeight)
+  }
 }
-#endif

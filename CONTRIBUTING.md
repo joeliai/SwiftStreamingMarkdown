@@ -14,7 +14,7 @@ When you do file a bug, the more context you give us, the faster we can help. Pl
 - The version of SwiftStreamingMarkdown you are on (commit SHA or tag)
 - The Xcode version you built with
 - How you integrated the package (Swift Package Manager via Xcode, SPM via `Package.swift`, etc.)
-- The full text of any stack traces, compiler errors, or SwiftUI runtime warnings
+- The full text of any stack traces, compiler errors, or UIKit runtime warnings (for example, Auto Layout constraint conflicts)
 - A minimal sample — ideally a small Xcode project or a snippet against the bundled `SwiftStreamingMarkdownSample` app — that reproduces the problem
 - Anything else that you think is relevant: streaming source, markdown input, custom theme, etc.
 

@@ -5,7 +5,6 @@
 
 import Foundation
 import Markdown
-import SwiftUI
 
 extension CodeBlock: BlockConvertible {
   func convert(attributeContainer: NSAttributeContainer, config: MarkdownRenderConfig) -> MarkdownRenderable {

@@ -3,12 +3,7 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import Foundation
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 import UniformTypeIdentifiers
 
 final class InlineCitationAttachment: NSTextAttachment {
@@ -32,7 +27,6 @@ final class InlineCitationAttachment: NSTextAttachment {
   static let textInsets = MDEdgeInsets(top: 2, left: 4, bottom: 2, right: 4)
   static let cornerRadius: CGFloat = 6
 
-  #if canImport(UIKit)
   override var image: UIImage? {
     get {
       if let assignedImage { return assignedImage }
@@ -44,19 +38,6 @@ final class InlineCitationAttachment: NSTextAttachment {
     }
     set { assignedImage = newValue }
   }
-  #elseif canImport(AppKit)
-  override var image: NSImage? {
-    get {
-      if let assignedImage { return assignedImage }
-      let app = AppAppearance.$current.read({ $0 })
-      switch app {
-      case .dark: return darkPreviewImage
-      case .light: return lightPreviewImage
-      }
-    }
-    set { assignedImage = newValue }
-  }
-  #endif
 
   /// Called during markdown parsing (background queue). Rasterizes both
   /// light/dark previews here so the getter never does work on the main thread.
@@ -66,8 +47,8 @@ final class InlineCitationAttachment: NSTextAttachment {
     self.citationData = citationData
 
     self.font = citationConfig.font
-    self.textColor = MDColor(citationConfig.textColor)
-    self.backgroundColor = MDColor(citationConfig.backgroundColor)
+    self.textColor = citationConfig.textColor
+    self.backgroundColor = citationConfig.backgroundColor
 
     if let title = citationData?.title {
       self.lightPreviewImage = Self.renderCitationImage(
@@ -109,18 +90,9 @@ final class InlineCitationAttachment: NSTextAttachment {
     appearance: AppAppearance
   ) -> MDImage {
     // Resolve colors for the target appearance
-    #if canImport(UIKit)
     let traitCollection = UITraitCollection(userInterfaceStyle: appearance.platformType)
     let resolvedTextColor = textColor.resolvedColor(with: traitCollection)
     let resolvedBackgroundColor = backgroundColor.resolvedColor(with: traitCollection)
-    #elseif canImport(AppKit)
-    var resolvedTextColor = textColor
-    var resolvedBackgroundColor = backgroundColor
-    appearance.platformType?.performAsCurrentDrawingAppearance {
-      resolvedTextColor = textColor.usingColorSpace(.sRGB) ?? textColor
-      resolvedBackgroundColor = backgroundColor.usingColorSpace(.sRGB) ?? backgroundColor
-    }
-    #endif
 
     let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: resolvedTextColor]
     let textSize = (title as NSString).size(withAttributes: attributes)
@@ -130,7 +102,6 @@ final class InlineCitationAttachment: NSTextAttachment {
     )
 
     // Render the citation pill image
-    #if canImport(UIKit)
     let renderer = UIGraphicsImageRenderer(size: totalSize)
     return renderer.image { _ in
       let rect = CGRect(origin: .zero, size: totalSize)
@@ -142,17 +113,5 @@ final class InlineCitationAttachment: NSTextAttachment {
                             width: ceil(textSize.width), height: ceil(textSize.height))
       (title as NSString).draw(in: textRect, withAttributes: attributes)
     }
-    #elseif canImport(AppKit)
-    return NSImage(size: totalSize, flipped: false) { rect in
-      let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
-      resolvedBackgroundColor.setFill()
-      path.fill()
-
-      let textRect = CGRect(x: Self.textInsets.left, y: Self.textInsets.bottom,
-                            width: ceil(textSize.width), height: ceil(textSize.height))
-      (title as NSString).draw(in: textRect, withAttributes: attributes)
-      return true
-    }
-    #endif
   }
 }

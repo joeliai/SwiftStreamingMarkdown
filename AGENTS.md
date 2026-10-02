@@ -4,16 +4,16 @@
 
 ## Project Overview
 
-SwiftStreamingMarkdown is a Swift Package that renders **Markdown** in SwiftUI. It is consumed by Apple-platform apps that need to display Markdown content, either bespoke or incrementally produced by an LLM or other streaming source. The package is iOS-first, distributed via **Swift Package Manager only**, and ships with a sample app under `Examples/`.
+SwiftStreamingMarkdown is a Swift Package that renders **Markdown** with UIKit. It is consumed by iOS apps that need to display Markdown content, either bespoke or incrementally produced by an LLM or other streaming source. The package is iOS-only, contains no SwiftUI, is distributed via **Swift Package Manager only**, and ships with a sample app under `Examples/`.
 
 **Key technologies:**
 
 | Topic | Value |
 |---|---|
 | Language | Swift |
-| UI | SwiftUI (some UIKit interop under `Sources/MarkdownText/UI/UIKit/`) |
+| UI | UIKit only (frame-based views under `Sources/MarkdownText/UI/`); no SwiftUI |
 | swift-tools-version | 5.9 |
-| Minimum Xcode | **16.0** (the package contains `@available(iOS 18.0, *)` annotations that require the iOS 18 SDK) |
+| Minimum Xcode | **16.0** (the package uses iOS 18 APIs behind `#available` checks, which require the iOS 18 SDK) |
 | Minimum iOS deployment | iOS 16 |
 | Build system | Swift Package Manager (no Bazel, no CocoaPods) |
 | Linter | SwiftLint (config: `.swiftlint.yml`, run via `swiftlint --strict`) |
@@ -30,9 +30,8 @@ SwiftStreamingMarkdown/
 │       ├── Inline/                          # Inline-level Markdown rendering
 │       ├── Citation/                        # Inline citation handling
 │       ├── Style/                           # Colors, fonts, typography
-│       ├── TextTransition/                  # iOS 18+ FadeInTextTransition
-│       ├── UI/                              # SwiftUI views (CodeBlockView, TableView, etc.)
-│       │   └── UIKit/                       # UIKit interop (ParagraphUIView, etc.)
+│       ├── UI/                              # UIKit views: DocumentView and the block views
+│       │   └── Paragraph/                   # ParagraphUIView (UITextView), inline LaTeX
 │       ├── Utilities/                       # Bundle, URL, String helpers
 │       └── Resources/                       # Assets.xcassets, Media.xcassets (Bundle.module)
 ├── Tests/
@@ -70,7 +69,11 @@ This step converts the markdown AST (`Document`) into a `RenderableDocument` for
 
 ### Render
 
-The `RenderableDocument` is then passed to the SwiftUI/UIKit layer to render on iOS devices. Most of the UI components are written in SwiftUI except for paragraphs. We chose UIKit's `UITextView` to render paragraphs to ensure the library can support streamed markdown with fine-grained animation control and high performance.
+The `RenderableDocument` is then rendered by UIKit views. The public entry points are `MarkdownView` (parses text), `StreamedMarkdownView` (parses an `AsyncStream` of snapshots), and `DocumentView` (renders a pre-parsed `RenderableDocument`); all are `UIView` subclasses.
+
+- Each block kind has a frame-based view conforming to `MarkdownBlockView`, which measures itself with `height(forWidth:)` and lays out its subviews in `layoutSubviews`. Paragraphs and headings use `ParagraphUIView` (a `UITextView`) for fine-grained streaming animation and high performance.
+- `BlockStackView` keeps a block's view while its id and kind are unchanged, so a streamed update only touches the blocks that changed. Block ids are positional, so hosts call `prepareForReuse()` before showing an unrelated document in a reused view.
+- `DocumentView` bridges to Auto Layout through `intrinsicContentSize` and invalidates the enclosing `UICollectionViewCell` or `UITableViewCell` when its height changes, so it works inside self-sizing cells. Asynchronous size changes inside a block (a loaded image, an expanded table) propagate up with `setNeedsMarkdownLayout()`.
 
 ---
 
@@ -153,7 +156,7 @@ var isFooEnabled: Bool
 ### Main Thread and Rendering Performance
 
 - Code must not block the main thread with sleeps, semaphore waits, busy polling etc.
-- Do not perform heavy operations inside SwiftUI view bodies — precompute upstream of the view.
+- Do not perform heavy operations in `layoutSubviews` or measurement — precompute upstream (parse/pre-render) and cache measurements per width.
 
 ### Data Flow
 

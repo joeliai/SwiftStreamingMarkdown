@@ -4,12 +4,7 @@
 //
 
 import SwiftStreamingMarkdown
-import SwiftUI
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 /// A completely custom `MarkdownRenderConfig` that demonstrates plugging in a
 /// different type family (Google Roboto) and a vivid teal-on-deep-purple
@@ -19,20 +14,25 @@ enum RobotoTheme {
 
   // MARK: - Colors
 
-  private static let pageForeground = Color("RobotoTheme/PageForeground")
-  private static let mutedForeground = Color("RobotoTheme/MutedForeground")
-  private static let accent = Color("RobotoTheme/Accent")
-  private static let accentSoft = Color("RobotoTheme/AccentSoft")
-  private static let boldEmphasis = Color("RobotoTheme/BoldEmphasis")
-  private static let codeForeground = Color("RobotoTheme/CodeForeground")
-  private static let codeBackground = Color("RobotoTheme/CodeBackground")
-  private static let codeUnderline = Color("RobotoTheme/CodeUnderline")
-  private static let tableHeaderBackground = Color("RobotoTheme/TableHeaderBackground")
-  private static let tableBorder = Color("RobotoTheme/TableBorder")
+  private static func color(named name: String) -> UIColor {
+    UIColor(named: name) ?? .label
+  }
+
+  private static let pageForeground = color(named: "RobotoTheme/PageForeground")
+  private static let mutedForeground = color(named: "RobotoTheme/MutedForeground")
+  private static let accent = color(named: "RobotoTheme/Accent")
+  private static let accentSoft = color(named: "RobotoTheme/AccentSoft")
+  private static let boldEmphasis = color(named: "RobotoTheme/BoldEmphasis")
+  private static let codeForeground = color(named: "RobotoTheme/CodeForeground")
+  private static let codeBackground = color(named: "RobotoTheme/CodeBackground")
+  private static let codeUnderline = color(named: "RobotoTheme/CodeUnderline")
+  private static let tableHeaderBackground = color(named: "RobotoTheme/TableHeaderBackground")
+  private static let tableBorder = color(named: "RobotoTheme/TableBorder")
 
   /// Background applied around the rendered content to make the Roboto theme
-  /// pop visually. Exposed so `DemonstrationView` can paint the scroll view.
-  static let pageBackground = Color("RobotoTheme/PageBackground")
+  /// pop visually. Exposed so `DemonstrationViewController` can paint the
+  /// scroll view.
+  static let pageBackground = color(named: "RobotoTheme/PageBackground")
 
   // MARK: - Fonts
 
@@ -43,13 +43,7 @@ enum RobotoTheme {
 
   private static func robotoItalic(_ size: CGFloat, bold: Bool = false) -> MDFont {
     let name = bold ? "Roboto-BoldItalic" : "Roboto-Italic"
-    #if canImport(UIKit)
-    return MDFont(name: name, size: size)
-      ?? .italicSystemFont(ofSize: size)
-    #elseif canImport(AppKit)
-    return MDFont(name: name, size: size)
-      ?? NSFontManager.shared.convert(.systemFont(ofSize: size), toHaveTrait: .italicFontMask)
-    #endif
+    return MDFont(name: name, size: size) ?? .italicSystemFont(ofSize: size)
   }
 
   private static func textFonts(size: CGFloat, lineHeight: CGFloat? = nil, letterSpacing: CGFloat? = nil) -> TextFonts {
@@ -126,8 +120,8 @@ enum RobotoTheme {
     codeBlockConfig: .init(
       theme: .atomOne,
       backgroundColor: .dynamic(
-        light: Color(red: 0.980, green: 0.980, blue: 0.980),
-        dark: Color(red: 0.157, green: 0.173, blue: 0.204)
+        light: UIColor(red: 0.980, green: 0.980, blue: 0.980, alpha: 1),
+        dark: UIColor(red: 0.157, green: 0.173, blue: 0.204, alpha: 1)
       )
     ),
     textSelectionConfig: .init(backgroundColor: pageBackground),

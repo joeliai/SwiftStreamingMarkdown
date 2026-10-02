@@ -3,13 +3,7 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import Foundation
-import SwiftUI
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 enum Typography: CaseIterable, Sendable {
   case extraLargeStrong
@@ -82,7 +76,6 @@ enum Typography: CaseIterable, Sendable {
     }
   }
 
-  #if canImport(UIKit)
   private static func systemFont(size: CGFloat, weight: MDFont.Weight, italic: Bool = false) -> MDFont {
     let scaledSize = UIFontMetrics.default.scaledValue(for: size)
     let baseFont = MDFont.systemFont(ofSize: scaledSize, weight: weight)
@@ -95,23 +88,6 @@ enum Typography: CaseIterable, Sendable {
   private static func systemMonospacedFont(size: CGFloat, weight: MDFont.Weight) -> MDFont {
     let scaledSize = UIFontMetrics.default.scaledValue(for: size)
     return MDFont.monospacedSystemFont(ofSize: scaledSize, weight: weight)
-  }
-  #elseif canImport(AppKit)
-  private static func systemFont(size: CGFloat, weight: MDFont.Weight, italic: Bool = false) -> MDFont {
-    let baseFont = MDFont.systemFont(ofSize: size, weight: weight)
-    guard italic else {
-      return baseFont
-    }
-    return baseFont.withItalicTrait()
-  }
-
-  private static func systemMonospacedFont(size: CGFloat, weight: MDFont.Weight) -> MDFont {
-    MDFont.monospacedSystemFont(ofSize: size, weight: weight)
-  }
-  #endif
-
-  var font: Font {
-    return Font(mdFont)
   }
 
   static var extraLargeTextFonts: TextFonts {
@@ -192,7 +168,6 @@ enum Typography: CaseIterable, Sendable {
   }
 }
 
-#if canImport(UIKit)
 private extension UIFont {
   func withItalicTrait() -> UIFont {
     let traits = fontDescriptor.symbolicTraits.union(.traitItalic)
@@ -202,11 +177,3 @@ private extension UIFont {
     return UIFont(descriptor: descriptor, size: pointSize)
   }
 }
-#elseif canImport(AppKit)
-private extension NSFont {
-  func withItalicTrait() -> NSFont {
-    let descriptor = fontDescriptor.withSymbolicTraits(.italic)
-    return NSFont(descriptor: descriptor, size: pointSize) ?? self
-  }
-}
-#endif

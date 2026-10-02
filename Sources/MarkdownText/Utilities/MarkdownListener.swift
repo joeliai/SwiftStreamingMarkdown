@@ -29,15 +29,22 @@ public extension MarkdownListener {
   func resolveBundledResource(fileName: String, ext: String?) -> URL? { nil }
 }
 
-public final class MarkdownController: ObservableObject {
+/// Routes render and interaction events from the rendered views to the
+/// configured `MarkdownListener`. Owned by `DocumentView`; all methods are
+/// expected to be called on the main thread.
+public final class MarkdownController {
 
   private let listener: MarkdownListener?
   private var continuation: AsyncStream<RenderableDocument>.Continuation?
   private var listenerTask: Task<Void, Never>?
 
-  /// Set to `true` when the built-in "Select more text" edit-menu action is
-  /// tapped. `DocumentView` observes this to present the text selection modal.
-  @Published var isTextSelectionRequested = false
+  /// Invoked when the built-in "Select more text" edit-menu action is tapped.
+  /// `DocumentView` sets this to present the text selection modal.
+  var onTextSelectionRequested: (() -> Void)?
+
+  /// Opens links and citations the user taps. `DocumentView` routes this to
+  /// its `openURL` property.
+  var openURL: ((URL) -> Void)?
 
   init(listener: MarkdownListener?) {
     self.listener = listener
@@ -45,10 +52,10 @@ public final class MarkdownController: ObservableObject {
 
   /// Request presentation of the full-document text selection modal.
   func requestTextSelection() {
-    isTextSelectionRequested = true
+    onTextSelectionRequested?()
   }
 
-  func onAppear(markdown: RenderableDocument) async {
+  func onAppear(markdown: RenderableDocument) {
     cleanup()
 
     guard let listener else {
@@ -74,7 +81,7 @@ public final class MarkdownController: ObservableObject {
     continuation?.yield(markdown)
   }
 
-  func onDisappear() async {
+  func onDisappear() {
     cleanup()
   }
 

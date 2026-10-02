@@ -9,7 +9,7 @@
 //  You can toggle recording behavior by setting `isRecording` to `true` or `false` in `setUp()`.
 //
 import SnapshotTesting
-import SwiftUI
+import UIKit
 import XCTest
 @testable import SwiftStreamingMarkdown
 
@@ -21,26 +21,30 @@ open class SnapshotTestCase: XCTestCase {
     // isRecording = true
   }
 
-  #if canImport(UIKit)
-  /* Function to perform snapshot tests. Embeds all views in a ViewController for.
-   - Parameters:
-   - view: View to be tested
-   - variants: Device variants to be tested. Defaults to the standard collection of device variants
-   - testName: The name of the test in which failure occurred. Defaults to the function name of the test case in which this function was called.
-   - file: The file in which failure occurred. Defaults to the file name of the test case in which this function was called.
-   - line: The line number on which failure occurred. Defaults to the line number on which this function was called.
-   */
-
-  public func assert<V: View>(
-    _ view: V,
+  /// Snapshots the view built by `makeView`, hosted in a `CanvasViewController`,
+  /// once per device variant. A fresh view is built for every variant.
+  /// - Parameters:
+  ///   - insets: Insets applied inside the safe area. Defaults to none.
+  ///   - verticalAlignment: Pins the view to the top of the safe area or centers it.
+  ///   - variants: Device variants to be tested. Defaults to the standard collection of device variants.
+  ///   - testName: The name of the test in which failure occurred. Defaults to the function name of the test case in which this function was called.
+  ///   - file: The file in which failure occurred. Defaults to the file name of the test case in which this function was called.
+  ///   - line: The line number on which failure occurred. Defaults to the line number on which this function was called.
+  ///   - makeView: Builds the view under test.
+  @MainActor
+  func assert(
+    insets: UIEdgeInsets = .zero,
+    verticalAlignment: CanvasViewController.VerticalAlignment = .top,
     variants: [IOSVariant] = .standard(precision: 0.99, perceptualPrecision: 1.00),
     testName: String = #function,
     file: StaticString = #file,
-    line: UInt = #line
+    line: UInt = #line,
+    makeView: () -> UIView
   ) {
-    variants.forEach { variant in
+    for variant in variants {
+      let viewController = CanvasViewController(content: makeView(), insets: insets, verticalAlignment: verticalAlignment)
       assertSnapshot(
-        of: view.environment(\.colorScheme, variant.colorScheme).asViewController,
+        of: viewController,
         as: variant.snapshot,
         named: variant.name,
         file: file,
@@ -49,48 +53,38 @@ open class SnapshotTestCase: XCTestCase {
       )
     }
   }
-  #elseif canImport(AppKit)
-  /// Perform snapshot tests on macOS using window-size-based variants.
-  public func assert<V: View>(
-    _ view: V,
-    variants: [MacVariant] = .standard(precision: 0.99, perceptualPrecision: 1.00),
+
+  /// Snapshots a `DocumentView` rendering `renderableDocument` with 24-point
+  /// horizontal insets.
+  @MainActor
+  func assertDocument(
+    _ renderableDocument: RenderableDocument,
+    config: MarkdownRenderConfig = .default,
     testName: String = #function,
     file: StaticString = #file,
     line: UInt = #line
   ) {
-    variants.forEach { variant in
-      assertSnapshot(
-        of: view.environment(\.colorScheme, variant.colorScheme).asViewController,
-        as: variant.snapshot,
-        named: variant.name,
-        file: file,
-        testName: testName,
-        line: line
-      )
+    assert(insets: UIEdgeInsets(top: 0, left: 24, bottom: 0, right: 24), testName: testName, file: file, line: line) {
+      DocumentView(renderableDocument: renderableDocument, config: config)
     }
   }
-  #endif
-}
 
-#if canImport(UIKit)
-import UIKit
-
-private extension View {
-  var asViewController: UIViewController {
-    let vc = UIHostingController(rootView: self)
-    vc.view.backgroundColor = .clear
-    return vc
+  /// Snapshots the block view that renders `renderable` on its own.
+  @MainActor
+  func assertBlock(
+    _ renderable: MarkdownRenderable,
+    config: MarkdownRenderConfig = .default,
+    insets: UIEdgeInsets = .zero,
+    verticalAlignment: CanvasViewController.VerticalAlignment = .top,
+    testName: String = #function,
+    file: StaticString = #file,
+    line: UInt = #line,
+    configure: (MarkdownBlockView) -> Void = { _ in }
+  ) {
+    assert(insets: insets, verticalAlignment: verticalAlignment, testName: testName, file: file, line: line) {
+      let view = makeBlockView(for: renderable, context: BlockContext(config: config, controller: nil))
+      configure(view)
+      return view
+    }
   }
 }
-#elseif canImport(AppKit)
-import AppKit
-
-private extension View {
-  var asViewController: NSViewController {
-    let vc = NSHostingController(rootView: self)
-    vc.view.wantsLayer = true
-    vc.view.layer?.backgroundColor = NSColor.clear.cgColor
-    return vc
-  }
-}
-#endif

@@ -3,21 +3,14 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import Foundation
 import iosMath
-import SwiftUI
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 // MARK: - LatexAttachmentData Color Resolution
 
 extension LatexAttachmentData {
   var resolvedTextColor: MDColor {
-    let fallback = MDColor(Color.Theme.Foreground.Primary.Primary750)
-    #if canImport(UIKit)
+    let fallback = UIColor.Theme.Foreground.Primary.Primary750
     guard let lightColor = UIColor(hex: lightTextColor),
           let darkColor = UIColor(hex: darkTextColor) else {
       return fallback
@@ -25,16 +18,6 @@ extension LatexAttachmentData {
     return UIColor { trait in
       trait.userInterfaceStyle == .dark ? darkColor : lightColor
     }
-    #elseif canImport(AppKit)
-    guard let lightColor = NSColor(hex: lightTextColor),
-          let darkColor = NSColor(hex: darkTextColor) else {
-      return fallback
-    }
-    return NSColor(name: nil) { appearance in
-      let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-      return isDark ? darkColor : lightColor
-    }
-    #endif
   }
 }
 
@@ -49,10 +32,9 @@ final class LatexViewProvider: NSTextAttachmentViewProvider {
   private struct DecodedAttachment {
     var latex: String = ""
     var fontSize: CGFloat = Typography.base.mdFont.pointSize
-    var textColor: MDColor = MDColor(Color.Theme.Foreground.Primary.Primary750)
+    var textColor: MDColor = UIColor.Theme.Foreground.Primary.Primary750
   }
 
-  #if canImport(UIKit)
   required override init(textAttachment attachment: NSTextAttachment,
                          parentView: UIView?,
                          textLayoutManager: NSTextLayoutManager?,
@@ -63,18 +45,6 @@ final class LatexViewProvider: NSTextAttachmentViewProvider {
                textLayoutManager: textLayoutManager, location: location)
     tracksTextAttachmentViewBounds = true
   }
-  #elseif canImport(AppKit)
-  required override init(textAttachment attachment: NSTextAttachment,
-                         parentView: NSView?,
-                         textLayoutManager: NSTextLayoutManager?,
-                         location: any NSTextLocation) {
-    let decoded = Self.decode(attachment: attachment)
-    (latex, fontSize, textColor) = (decoded.latex, decoded.fontSize, decoded.textColor)
-    super.init(textAttachment: attachment, parentView: parentView,
-               textLayoutManager: textLayoutManager, location: location)
-    tracksTextAttachmentViewBounds = true
-  }
-  #endif
 
   private static func decode(attachment: NSTextAttachment) -> DecodedAttachment {
     var result = DecodedAttachment()
@@ -105,12 +75,8 @@ final class LatexViewProvider: NSTextAttachmentViewProvider {
     guard let mathLabel = view as? MTMathUILabel else {
       return .zero
     }
-    #if canImport(UIKit)
     mathLabel.sizeToFit()
     let size = mathLabel.bounds.size
-    #elseif canImport(AppKit)
-    let size = mathLabel.intrinsicContentSize
-    #endif
     let height = size.height.rounded(.up) + 1.0
     let font = attributes[.font] as? MDFont ?? MDFont.systemFont(ofSize: fontSize)
     let yOffset = (font.xHeight - height) / 2.0

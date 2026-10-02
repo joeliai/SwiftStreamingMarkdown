@@ -4,7 +4,7 @@
 //
 
 import HighlightSwift
-import SwiftUI
+import UIKit
 
 /// Styling configuration for fenced code blocks, primarily the syntax-
 /// highlighting color theme.
@@ -13,7 +13,8 @@ public struct CodeBlockConfig: Hashable, Sendable {
   /// Syntax-highlighting color theme applied to code blocks.
   ///
   /// Built-in cases map to the matching highlight.js theme and automatically
-  /// resolve to their light or dark variant based on the active `ColorScheme`.
+  /// resolve to their light or dark variant based on the active
+  /// `UIUserInterfaceStyle`.
   /// Use `.custom(lightCSS:darkCSS:)` to supply your own highlight.js CSS for
   /// each appearance.
   public enum Theme: Hashable, Sendable {
@@ -50,8 +51,8 @@ public struct CodeBlockConfig: Hashable, Sendable {
 
     /// Custom highlight.js CSS supplied per appearance.
     /// - Parameters:
-    ///   - lightCSS: CSS applied when the active color scheme is light.
-    ///   - darkCSS: CSS applied when the active color scheme is dark.
+    ///   - lightCSS: CSS applied when the active interface style is light.
+    ///   - darkCSS: CSS applied when the active interface style is dark.
     case custom(lightCSS: String, darkCSS: String)
 
     /// The default theme, preserving the bundled dark code-block styling in
@@ -68,11 +69,11 @@ public struct CodeBlockConfig: Hashable, Sendable {
   /// Background color applied behind the code block chrome. `nil` leaves the
   /// background unset so the surrounding content shows through; this is the
   /// default for any non-default theme.
-  public let backgroundColor: Color?
+  public let backgroundColor: UIColor?
 
   /// Foreground color applied to the code block chrome (language label and
   /// copy control). `nil` falls back to the bundled `Stone350`.
-  public let foregroundColor: Color?
+  public let foregroundColor: UIColor?
 
   /// Font set applied to the code text. Defaults to the bundled code fonts.
   public let codeTextFonts: TextFonts
@@ -88,8 +89,8 @@ public struct CodeBlockConfig: Hashable, Sendable {
   ///   - foregroundColor: See `foregroundColor`. Defaults to `nil` (`Stone350`).
   public init(
     theme: Theme = .default,
-    backgroundColor: Color? = nil,
-    foregroundColor: Color? = nil
+    backgroundColor: UIColor? = nil,
+    foregroundColor: UIColor? = nil
   ) {
     self.init(
       theme: theme,
@@ -109,8 +110,8 @@ public struct CodeBlockConfig: Hashable, Sendable {
   ///   - chromeTextFonts: See `chromeTextFonts`. Pass `nil` for bundled defaults.
   public init(
     theme: Theme = .default,
-    backgroundColor: Color? = nil,
-    foregroundColor: Color? = nil,
+    backgroundColor: UIColor? = nil,
+    foregroundColor: UIColor? = nil,
     codeTextFonts: TextFonts?,
     chromeTextFonts: TextFonts?
   ) {
@@ -125,23 +126,24 @@ public struct CodeBlockConfig: Hashable, Sendable {
   /// code-block background.
   public static let `default` = CodeBlockConfig(
     theme: .default,
-    backgroundColor: Color.Theme.Component.CodeBlock.Background.Background750
+    backgroundColor: UIColor.Theme.Component.CodeBlock.Background.Background750
   )
 }
 
 extension CodeBlockConfig.Theme {
-  /// Resolve the highlight.js colors to use for the given color scheme.
+  /// Resolve the highlight.js colors to use for the given interface style.
   ///
-  /// Only `colors.css` affects the rendered `AttributedString`; the code-block
-  /// chrome background is owned by `CodeBlockView`, so the theme background hex
-  /// is intentionally ignored here.
-  func highlightColors(for colorScheme: ColorScheme) -> HighlightColors {
+  /// Only `colors.css` affects the highlighted text; the code-block chrome
+  /// background is owned by `CodeBlockView`, so the theme background hex is
+  /// intentionally ignored here.
+  func highlightColors(for userInterfaceStyle: UIUserInterfaceStyle) -> HighlightColors {
+    let isDark = userInterfaceStyle == .dark
     switch self {
     case .custom(let lightCSS, let darkCSS):
-      return .custom(css: colorScheme == .dark ? darkCSS : lightCSS)
+      return .custom(css: isDark ? darkCSS : lightCSS)
     default:
       let theme = builtInHighlightTheme
-      return colorScheme == .dark ? .dark(theme) : .light(theme)
+      return isDark ? .dark(theme) : .light(theme)
     }
   }
 

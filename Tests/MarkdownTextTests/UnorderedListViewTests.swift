@@ -5,38 +5,21 @@
 
 import Markdown
 @testable import SwiftStreamingMarkdown
-import SwiftUI
+import UIKit
 import XCTest
 
+@MainActor
 final class UnorderedListViewTests: SnapshotTestCase {
 
-  @MainActor
+  private let padding = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+
   func testUnorderedListView() async throws {
     let paragraphs = ["item 1", "item 2", "item 3, this is a very long item with a lot of texts. it may create a multi-line paragraph."]
-    let parser = MarkdownParserImpl()
-    var results: [[MarkdownRenderable]] = []
-    for paragraph in paragraphs {
-      let doc = await parser.parse(text: paragraph)
-      results.append(doc.convert(with: .default))
-    }
-    let unorderedListView = UnorderedListView(items: [
-      MarkdownListItem(children: [results[0][0]],
-                       startsWithBold: false),
-      MarkdownListItem(children: [results[1][0]],
-                       startsWithBold: false),
-      MarkdownListItem(children: [results[2][0]],
-                       startsWithBold: false)
-    ],
-    nestedLevel: 0).padding()
+    let items = await listItems(parsing: paragraphs)
 
-    let view = CanvasView {
-      unorderedListView
-    }.environment(\.markdownConfig, MarkdownRenderConfig.default)
-
-    assert(view)
+    assertBlock(.unorderedList(id: "list", items: items, nestedLevel: 0), insets: padding)
   }
 
-  @MainActor
   func testUnorderedListViewWithCitations() async throws {
     let citationMarker = "9F742443"
     let paragraphs = [
@@ -44,52 +27,22 @@ final class UnorderedListViewTests: SnapshotTestCase {
       "Item with citation [\(citationMarker)](http://example.com?citationMarker=\(citationMarker)&citationTitle=ESPN&citationA11yValue=ESPN%20Sports)",
       "item 3"
     ]
-    let parser = MarkdownParserImpl()
-    var results: [[MarkdownRenderable]] = []
-    for paragraph in paragraphs {
-      let doc = await parser.parse(text: paragraph)
-      results.append(doc.convert(with: .default))
-    }
-    let unorderedListView = UnorderedListView(items: [
-      MarkdownListItem(children: [results[0][0]],
-                       startsWithBold: false),
-      MarkdownListItem(children: [results[1][0]],
-                       startsWithBold: false),
-      MarkdownListItem(children: [results[2][0]],
-                       startsWithBold: false)
-    ],
-    nestedLevel: 0).padding()
+    let items = await listItems(parsing: paragraphs)
 
-    let view = CanvasView {
-      unorderedListView
-    }.environment(\.markdownConfig, MarkdownRenderConfig.default)
-
-    assert(view)
+    assertBlock(.unorderedList(id: "list", items: items, nestedLevel: 0), insets: padding)
   }
 
-  @MainActor
   func testTaskListView() async throws {
     let text = """
     - [x] completed task
     - [ ] open task with a longer trailing description to exercise wrapping behavior
     - regular item mixed into the same list
     """
-    let parser = MarkdownParserImpl()
-    let document = await parser.parse(text: text)
-    let renderables = document.convert(with: .default)
-    guard case .unorderedList(_, let items, let nestedLevel) = renderables.first else {
-      XCTFail("Expected the parsed document to start with an unordered list")
-      return
-    }
+    let renderable = try await firstRenderable(parsing: text)
 
-    let view = CanvasView {
-      UnorderedListView(items: items, nestedLevel: nestedLevel).padding()
-    }.environment(\.markdownConfig, MarkdownRenderConfig.default)
-
-    assert(view)
+    assertBlock(renderable, insets: padding)
   }
 
-  @MainActor
   func testNestedUnorderedListView() async throws {
     let text = """
     - Top level item 1
@@ -100,18 +53,28 @@ final class UnorderedListViewTests: SnapshotTestCase {
     - Top level item 2
       - Nested item C
     """
+    let renderable = try await firstRenderable(parsing: text)
+
+    assertBlock(renderable, insets: padding)
+  }
+
+  private func listItems(parsing paragraphs: [String]) async -> [MarkdownListItem] {
     let parser = MarkdownParserImpl()
-    let document = await parser.parse(text: text)
-    let renderables = document.convert(with: .default)
-    guard case .unorderedList(_, let items, let nestedLevel) = renderables.first else {
-      XCTFail("Expected the parsed document to start with an unordered list")
-      return
+    var items: [MarkdownListItem] = []
+    for paragraph in paragraphs {
+      let document = await parser.parse(text: paragraph)
+      items.append(MarkdownListItem(children: [document.convert(with: .default)[0]], startsWithBold: false))
     }
+    return items
+  }
 
-    let view = CanvasView {
-      UnorderedListView(items: items, nestedLevel: nestedLevel).padding()
-    }.environment(\.markdownConfig, MarkdownRenderConfig.default)
-
-    assert(view)
+  private func firstRenderable(parsing text: String) async throws -> MarkdownRenderable {
+    let document = await MarkdownParserImpl().parse(text: text)
+    let renderable = try XCTUnwrap(document.convert(with: .default).first)
+    guard case .unorderedList = renderable else {
+      XCTFail("Expected the parsed document to start with an unordered list")
+      throw CancellationError()
+    }
+    return renderable
   }
 }

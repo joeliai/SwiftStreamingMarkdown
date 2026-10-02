@@ -5,7 +5,6 @@
 
 import Foundation
 import Markdown
-import SwiftUI
 
 extension BlockQuote: BlockConvertible {
   var quoteTypes: BlockQuoteType {

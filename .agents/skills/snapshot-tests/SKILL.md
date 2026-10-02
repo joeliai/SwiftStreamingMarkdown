@@ -90,79 +90,12 @@ equivalent iOS Simulator destination.
    user to eyeball the diff before committing — recording overwrites
    references blindly, including wrong renders.
 
-### Platform coverage: iOS records locally, macOS does not
+### Platform coverage
 
-A local `xcodebuild ... -destination "platform=iOS Simulator,..."` run only
-regenerates the **iOS** variants (`iPhone16-*`, `iPadPro11-*`,
-`iPadPro11Landscape-*`). The **macOS** variants (`macOS-standard-light`,
-`macOS-standard-dark`) are *not* produced by that run.
-
-**Do not record macOS references on a developer machine.** The macOS
-variants use a strict `perceptualPrecision: 1.0`, so even a one-off
-subpixel/font-rendering difference between a local macOS version and the CI
-runner's macOS version fails validation. Locally-recorded macOS PNGs will
-almost always mismatch CI.
-
-macOS references are recorded by the dedicated **`Record macOS Snapshots`**
-workflow (`.github/workflows/record-macos-snapshots.yml`), a
-`workflow_dispatch` job on `runs-on: macos-26`. It flips `isRecording` on,
-deletes the existing `*macOS*.png` references, re-records them with
-`-destination "platform=macOS"`, and uploads the fresh PNGs as the
-**`macos-snapshots`** artifact. (The record step's `continue-on-error: true`
-means the run reports success even though `xcodebuild test` exits non-zero in
-record mode.)
-
-Note the workflow re-records the **entire** macOS suite, so the artifact
-contains every `*.macOS-standard-*.png` — copy back **only** the files your
-change actually affects, so you don't churn unrelated references against a
-possibly-different runner rendering.
-
-#### When the branch lives in `microsoft/SwiftStreamingMarkdown`
-
-1. Push your branch (with re-recorded iOS references) to `origin`.
-2. Run the workflow against it:
-   ```bash
-   gh workflow run "Record macOS Snapshots" --ref <branch>
-   gh run watch "$(gh run list --workflow 'Record macOS Snapshots' \
-     --branch <branch> --limit 1 --json databaseId -q '.[0].databaseId')" \
-     --exit-status
-   ```
-3. Download the artifact and copy only the affected PNGs into place:
-   ```bash
-   gh run download <run-id> -n macos-snapshots -D /tmp/macos-snaps
-   cp /tmp/macos-snaps/<TestMethod>.macOS-standard-*.png \
-     Tests/MarkdownTextTests/__Snapshots__/<TestClass>/
-   ```
-4. Eyeball the PNGs, commit, and push.
-
-#### When the branch lives on a fork (cross-repo PR)
-
-`workflow_dispatch` only lists branches that exist in
-`microsoft/SwiftStreamingMarkdown`; a fork PR's head branch is **not**
-selectable, and the base repo cannot dispatch a workflow against a fork
-branch. Mirror the branch onto `origin` first (requires write access to the
-base repo — e.g. a maintainer updating a contributor's PR):
-
-1. Check out the PR branch locally (`gh pr checkout <pr-number>`) and push a
-   temporary mirror to `origin`:
-   ```bash
-   git push origin <local-branch>:pr-<n>-macos-record
-   ```
-2. Run `Record macOS Snapshots` against `pr-<n>-macos-record` (same
-   `gh workflow run` / `gh run watch` as above). The mirror carries the same
-   code state, so the recorded PNGs match the PR's rendering.
-3. Download the `macos-snapshots` artifact and copy only the affected PNGs
-   over the references in your local PR-branch working tree.
-4. Eyeball, commit, and `git push` to the **fork** PR branch (the local
-   branch already tracks the fork via `gh pr checkout`).
-5. Delete the temporary mirror:
-   ```bash
-   git push origin --delete pr-<n>-macos-record
-   ```
-
-So the normal flow for a rendering change is: record iOS locally, push, then
-backfill the affected macOS references from the `Record macOS Snapshots`
-workflow artifact in a follow-up commit.
+The package is iOS-only, so a local iOS Simulator run records every variant
+(`iPhone16-*`, `iPadPro11-*`, `iPadPro11Landscape-*`). Record on the same
+simulator OS that CI uses (iPhone 17 / iOS 26.4.1) so the references match
+CI's rendering.
 
 ## Mode 2: validate snapshots
 

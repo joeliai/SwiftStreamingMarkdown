@@ -5,35 +5,20 @@
 
 import Markdown
 @testable import SwiftStreamingMarkdown
-import SwiftUI
 import XCTest
 
+@MainActor
 final class OrderedListViewTests: SnapshotTestCase {
 
-  // [Auto-disabled] Real test failure detected by CI pipeline
-  @MainActor
-  func skip_testOrderedListView() async throws {
+  func testOrderedListView() async throws {
     let text: [String] = (0..<40).map { i in
       "item \(i+1)"
     }
-    let parser = MarkdownParserImpl()
-    var results: [[MarkdownRenderable]] = []
-    for paragraph in text {
-      let doc = await parser.parse(text: paragraph)
-      results.append(doc.convert(with: .default))
-    }
+    let items = await listItems(parsing: text)
 
-    let items: [MarkdownListItem] = results.map { renderables in
-      MarkdownListItem(children: renderables, startsWithBold: false)
-    }
-    let view = CanvasView {
-      OrderedListView(items: items)
-    }
-
-    assert(view)
+    assertBlock(.orderedList(id: "list", items: items))
   }
 
-  @MainActor
   func testOrderedListViewWithCitations() async throws {
     let citationMarker = CitationCoder.default.citationMarker
     let textWithCitations: [String] = [
@@ -42,23 +27,19 @@ final class OrderedListViewTests: SnapshotTestCase {
       "Plain text item without citations",
       "Mixed content [\(citationMarker)](http://example.com?citationMarker=\(citationMarker)&citationTitle=Microsoft&citationA11yValue=Microsoft%20Corporation) and more text"
     ]
+    let items = await listItems(parsing: textWithCitations)
 
+    // Validates that the first-line alignment handles leading citations.
+    assertBlock(.orderedList(id: "list", items: items))
+  }
+
+  private func listItems(parsing paragraphs: [String]) async -> [MarkdownListItem] {
     let parser = MarkdownParserImpl()
-    var results: [[MarkdownRenderable]] = []
-    for paragraph in textWithCitations {
-      let doc = await parser.parse(text: paragraph)
-      results.append(doc.convert(with: .default))
+    var items: [MarkdownListItem] = []
+    for paragraph in paragraphs {
+      let document = await parser.parse(text: paragraph)
+      items.append(MarkdownListItem(children: document.convert(with: .default), startsWithBold: false))
     }
-
-    let items: [MarkdownListItem] = results.map { renderables in
-      MarkdownListItem(children: renderables, startsWithBold: false)
-    }
-
-    // Test that the view renders without crashing (validates extractFirstFont works with citations)
-    let view = CanvasView {
-      OrderedListView(items: items)
-    }
-
-    assert(view)
+    return items
   }
 }

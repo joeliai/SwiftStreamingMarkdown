@@ -14,6 +14,7 @@ enum TestStrings {
   static let l3 = "Level 3"
 }
 
+@MainActor
 final class BlockQuoteViewSnapshotTests: SnapshotTestCase {
 
   func test_l0_quote() throws {
@@ -21,11 +22,7 @@ final class BlockQuoteViewSnapshotTests: SnapshotTestCase {
       .text(TestStrings.l0)
     ]))
 
-    let view = CanvasView {
-      BlockQuoteView(item: renderable)
-    }
-
-    assert(view)
+    assertBlock(.blockQuote(id: "quote", item: renderable))
   }
 
   func test_l0_l1_quote() throws {
@@ -36,11 +33,7 @@ final class BlockQuoteViewSnapshotTests: SnapshotTestCase {
       ])
     ]))
 
-    let view = CanvasView {
-      BlockQuoteView(item: renderable)
-    }
-
-    assert(view)
+    assertBlock(.blockQuote(id: "quote", item: renderable))
   }
 
   func test_l0_l1_l0_l1_quote() throws {
@@ -55,11 +48,7 @@ final class BlockQuoteViewSnapshotTests: SnapshotTestCase {
       ])
     ]))
 
-    let view = CanvasView {
-      BlockQuoteView(item: renderable)
-    }
-
-    assert(view)
+    assertBlock(.blockQuote(id: "quote", item: renderable))
   }
 
   func test_l0_l1_l0_quote() throws {
@@ -71,11 +60,7 @@ final class BlockQuoteViewSnapshotTests: SnapshotTestCase {
       .text(TestStrings.l0)
     ]))
 
-    let view = CanvasView {
-      BlockQuoteView(item: renderable)
-    }
-
-    assert(view)
+    assertBlock(.blockQuote(id: "quote", item: renderable))
   }
 
   func test_l0_l1_l2_l1_l0_quote() throws {
@@ -91,11 +76,7 @@ final class BlockQuoteViewSnapshotTests: SnapshotTestCase {
       .text(TestStrings.l0)
     ]))
 
-    let view = CanvasView {
-      BlockQuoteView(item: renderable)
-    }
-
-    assert(view)
+    assertBlock(.blockQuote(id: "quote", item: renderable))
   }
 
   func test_l0_l1_l2_l3_quote() throws {
@@ -112,11 +93,7 @@ final class BlockQuoteViewSnapshotTests: SnapshotTestCase {
       ])
     ]))
 
-    let view = CanvasView {
-      BlockQuoteView(item: renderable)
-    }
-
-    assert(view)
+    assertBlock(.blockQuote(id: "quote", item: renderable))
   }
 
   func test_l0_l1_l0_l1_l2_l1_l2_l3_l2_l1_l0_quote() throws {
@@ -144,10 +121,6 @@ final class BlockQuoteViewSnapshotTests: SnapshotTestCase {
       .text(TestStrings.l0)
     ]))
 
-    let view = CanvasView {
-      BlockQuoteView(item: renderable)
-    }
-
-    assert(view)
+    assertBlock(.blockQuote(id: "quote", item: renderable))
   }
 }

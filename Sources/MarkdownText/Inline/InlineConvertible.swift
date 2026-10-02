@@ -4,7 +4,6 @@
 //
 
 import Foundation
-import SwiftUI
 
 typealias NSAttributeContainer = [NSAttributedString.Key: Any]
 

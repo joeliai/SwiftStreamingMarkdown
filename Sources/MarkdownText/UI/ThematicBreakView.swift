@@ -3,18 +3,41 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import Foundation
-import SwiftUI
+import UIKit
 
-struct ThematicBreakView: View {
+/// Renders a thematic break (`---`) as a horizontal rule.
+final class ThematicBreakView: UIView, MarkdownBlockView {
 
-  @Environment(\.markdownConfig) var config: MarkdownRenderConfig
+  private static let verticalPadding: CGFloat = 8
+  private static let ruleBandHeight: CGFloat = 4
+  private static let ruleThickness: CGFloat = 1
 
-  var body: some View {
-    Divider()
-      .foregroundColor(config.thematicBreakColor)
-      .frame(height: 4)
-      .padding([.top, .bottom], 8)
-      .transition(.opacity)
+  private let ruleView = UIView()
+
+  init() {
+    super.init(frame: .zero)
+    addSubview(ruleView)
+  }
+
+  required init?(coder: NSCoder) {
+    nil
+  }
+
+  func update(with renderable: MarkdownRenderable, context: BlockContext) {
+    ruleView.backgroundColor = context.config.thematicBreakColor
+  }
+
+  func height(forWidth width: CGFloat) -> CGFloat {
+    Self.verticalPadding * 2 + Self.ruleBandHeight
+  }
+
+  override func sizeThatFits(_ size: CGSize) -> CGSize {
+    CGSize(width: size.width, height: height(forWidth: size.width))
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    let ruleY = Self.verticalPadding + (Self.ruleBandHeight - Self.ruleThickness) / 2
+    ruleView.frame = CGRect(x: 0, y: ruleY, width: bounds.width, height: Self.ruleThickness)
   }
 }

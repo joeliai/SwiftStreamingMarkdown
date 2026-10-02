@@ -3,77 +3,76 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 //
 
-import SwiftUI
 import iosMath
+import UIKit
 
-#if canImport(UIKit)
+/// Renders a display (block-level) LaTeX formula inside a horizontal scroll
+/// view, so formulas wider than the screen can be scrolled.
+final class BlockMathView: UIView, MarkdownBlockView {
 
-struct BlockMathView: UIViewRepresentable {
-  let latex: String
-  let color: Color
-  let pointSize: CGFloat
+  private let scrollView = UIScrollView()
+  private let mathLabel = MTMathUILabel()
+  private var cachedLabelSize: CGSize?
 
-  init(latex: String, color: Color = Color.Theme.Foreground.Primary.Primary750, pointSize: CGFloat = Typography.base.mdFont.pointSize) {
-    self.latex = latex
-    self.color = color
-    self.pointSize = pointSize
+  init() {
+    super.init(frame: .zero)
+    scrollView.showsHorizontalScrollIndicator = false
+    scrollView.showsVerticalScrollIndicator = false
+    scrollView.alwaysBounceVertical = false
+    addSubview(scrollView)
+
+    mathLabel.displayErrorInline = false
+    mathLabel.fontSize = Typography.base.mdFont.pointSize
+    scrollView.addSubview(mathLabel)
   }
 
-  func makeUIView(context: Context) -> MTMathUILabel {
-    let label = MTMathUILabel()
-    label.latex = latex
-    label.textColor = UIColor(color)
-    label.displayErrorInline = false
-    label.fontSize = pointSize
-    label.setContentHuggingPriority(.defaultHigh, for: .vertical)
-    return label
+  required init?(coder: NSCoder) {
+    nil
   }
 
-  func updateUIView(_ uiView: MTMathUILabel, context: Context) {
-    uiView.textColor = UIColor(color)
-    uiView.latex = latex
+  func update(with renderable: MarkdownRenderable, context: BlockContext) {
+    guard case .latex(_, let latex) = renderable else { return }
+    if mathLabel.textColor != context.config.paragraphStyle.textColor {
+      mathLabel.textColor = context.config.paragraphStyle.textColor
+    }
+    if mathLabel.latex != latex {
+      mathLabel.latex = latex
+      cachedLabelSize = nil
+      setNeedsLayout()
+    }
   }
 
-  func sizeThatFits(_ proposal: ProposedViewSize, uiView: MTMathUILabel, context: Context) -> CGSize? {
-    uiView.sizeToFit()
-    let size = uiView.bounds.size
-    // It's a known issue that MTMathUILabel may be cut off for some short statement. Manually add 1 to the height fix it.
-    return CGSize(width: size.width.rounded(.up), height: size.height.rounded(.up) + 1)
+  func height(forWidth width: CGFloat) -> CGFloat {
+    labelSize.height
+  }
+
+  override func sizeThatFits(_ size: CGSize) -> CGSize {
+    CGSize(width: size.width, height: labelSize.height)
+  }
+
+  /// The formula's size. `MTMathUILabel` can clip short formulas by a point,
+  /// so one extra point of height is added.
+  private var labelSize: CGSize {
+    if let cachedLabelSize {
+      return cachedLabelSize
+    }
+    let fitted = mathLabel.sizeThatFits(CGSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude))
+    let size = CGSize(width: fitted.width.rounded(.up), height: fitted.height.rounded(.up) + 1)
+    cachedLabelSize = size
+    return size
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    scrollView.frame = bounds
+    mathLabel.frame = CGRect(origin: .zero, size: labelSize)
+    scrollView.contentSize = labelSize
+  }
+
+  override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    super.traitCollectionDidChange(previousTraitCollection)
+    if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+      mathLabel.setNeedsDisplay()
+    }
   }
 }
-
-#elseif canImport(AppKit)
-
-struct BlockMathView: NSViewRepresentable {
-  let latex: String
-  let color: Color
-  let pointSize: CGFloat
-
-  init(latex: String, color: Color = Color.Theme.Foreground.Primary.Primary750, pointSize: CGFloat = Typography.base.mdFont.pointSize) {
-    self.latex = latex
-    self.color = color
-    self.pointSize = pointSize
-  }
-
-  func makeNSView(context: Context) -> MTMathUILabel {
-    let label = MTMathUILabel()
-    label.latex = latex
-    label.textColor = NSColor(color)
-    label.displayErrorInline = false
-    label.fontSize = pointSize
-    label.setContentHuggingPriority(.defaultHigh, for: .vertical)
-    return label
-  }
-
-  func updateNSView(_ nsView: MTMathUILabel, context: Context) {
-    nsView.textColor = NSColor(color)
-    nsView.latex = latex
-  }
-
-  func sizeThatFits(_ proposal: ProposedViewSize, nsView: MTMathUILabel, context: Context) -> CGSize? {
-    let size = nsView.intrinsicContentSize
-    return CGSize(width: size.width.rounded(.up), height: size.height.rounded(.up) + 1)
-  }
-}
-
-#endif

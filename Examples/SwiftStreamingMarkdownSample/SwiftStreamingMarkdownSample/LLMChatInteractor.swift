@@ -109,13 +109,115 @@ final class LLMChatInteractor {
     case stockQuote
   }
 
-  /// Mock replies in the order they rotate. The native views come right after
-  /// the introduction so that they are quick to reach.
+  /// Mock replies in the order they rotate. A long story and the native views
+  /// come right after the introduction so that they are quick to reach.
   private static let mockResponses: [MockResponse] = [
     .markdown("""
     SwiftStreamingMarkdown is designed to render Markdown incrementally as an LLM response arrives. It supports headings, lists, tables, citations, code blocks, math, and more.
 
     You can learn more in the [project documentation](https://github.com/microsoft/SwiftStreamingMarkdown?citationMarker=9F742443&citationTitle=SwiftStreamingMarkdown&citationA11yValue=SwiftStreamingMarkdown%20GitHub%20repository&citationId=chat-doc-1&chatItemId=llm-chat).
+    """),
+    .markdown("""
+    # The Keeper of Slow Letters
+
+    ## I. The station at the edge of the map
+
+    On the island of Vell, where the wind had opinions about everything, there was a telegraph station older than anyone who lived there. It sat on the last rock before the open sea: a squat stone building with one window, one stove, and one very patient woman named Mara Quill.
+
+    The cable that connected Vell to the mainland had been laid by people who expected it to last a hundred years. It had lasted a hundred and twelve, and it was tired. Messages no longer arrived all at once. They arrived the way rain begins: a single word, then a pause long enough to wonder whether that was all, then another word, and another.
+
+    Most people found this maddening. Mara found it restful. She kept a stack of cream-colored cards on her desk and wrote each word down as it came, in pencil, so that she could fix her mistakes. When a message was finished, she read it aloud once, folded the card in half, and carried it into town herself.
+
+    > *"A slow letter is still a letter,"* her grandmother used to say. *"It just takes the scenic route."*
+
+    ## II. Things on Mara's desk
+
+    Over the years, the desk had collected a small museum of useful objects:
+
+    1. A brass bell that rang whenever the line came alive.
+    2. A tin of peppermints, mostly for visitors and partly for herself.
+    3. A logbook of every message the station had ever carried, in eleven different handwritings.
+    4. A photograph of the lighthouse on the far side of the island, which had been dark for as long as she could remember.
+
+    She dusted the photograph every Sunday. She could not have told you why.
+
+    ## III. The first word
+
+    The storm arrived on a Tuesday in late November, and the message arrived with it.
+
+    The bell rang just after midnight. Mara lit the lamp, sharpened her pencil, and waited. The line hummed. The needle trembled. And then, very slowly, the first word came through:
+
+    **LOST.**
+
+    She wrote it down and waited for the rest. Nothing came for a long time. The wind threw handfuls of rain against the window. The stove ticked as it cooled. Mara put another log on the fire and did not take her eyes off the needle.
+
+    **IN.**
+
+    **FOG.**
+
+    Three words in nearly an hour. Somewhere out on the water, somebody was tapping out a message one careful letter at a time, and the old cable was carrying it as best it could.
+
+    ## IV. Waiting
+
+    By morning the whole town knew. People do not have much to talk about on Vell in November, so a message that took all night to arrive was the best news in years.
+
+    They came up the hill in ones and twos. The baker brought bread. The schoolteacher brought her students, who had never seen the station and wanted to know why it smelled like pencil shavings. The harbor master brought a chart and spread it across the floor, weighing down the corners with Mara's peppermints.
+
+    "If they're in the fog," he said, "they're somewhere out past the reef. Nobody goes past the reef in fog. Not on purpose."
+
+    "Then they're not there on purpose," said Mara, and wrote down the next word:
+
+    **NO.**
+
+    **LIGHT.**
+
+    The room went quiet. Everyone looked, without meaning to, at the photograph on the desk.
+
+    ## V. What the fog said
+
+    The rest of the message came through over the next few hours, one word at a time, while the town held its breath and the baker's bread went quietly stale. When it was finished, Mara read it aloud, the way she always did:
+
+    > *Lost in fog. No light. Engine failing. Child aboard. Drifting south of the reef. Can anyone see us.*
+
+    "Can anyone see us," the schoolteacher repeated softly. There was no question mark. The cable had never carried question marks; it only carried what people meant.
+
+    The harbor master shook his head. "We can't send a boat out in this. We'd lose two crews instead of one."
+
+    Mara looked at the photograph of the dark lighthouse for a long moment. Then she stood, took her coat from the hook, and put the brass bell in her pocket.
+
+    "We don't need to find them," she said. "We need them to find us."
+
+    ## VI. The light
+
+    The lighthouse had been dark for thirty-one years. Its lamp was cracked, its gears were rusted, and its staircase had a hundred and forty steps, eleven of which were missing. Everyone who climbed it that afternoon remembered the count for the rest of their lives.
+
+    They could not fix the great lamp, but the town had other lights. The baker brought every lantern from the bakery. The schoolteacher's students brought the candles from the school's winter play. The harbor master brought the signal flares he had been saving for an emergency, and admitted, a little sheepishly, that this was probably it.
+
+    They set them all at the top of the tower, behind the old glass, and lit them one by one, the way the message had arrived: a single light, then a pause, then another, and another, until the top of the lighthouse glowed like a coal blown back to life.
+
+    Then Mara went back down to the station, sat at her desk, and tapped out a reply on the old cable, one slow word at a time:
+
+    **LOOK.**
+
+    **NORTH.**
+
+    **WE.**
+
+    **SEE.**
+
+    **YOU.**
+
+    ## VII. Afterward
+
+    The boat came in at dawn, limping through the last of the fog with its engine coughing and its crew waving at the light as if it were an old friend. There were four sailors aboard, and a girl of about nine who had kept the boat's log the whole way, one word at a time, because she had read somewhere that the person keeping the log is never allowed to be afraid.
+
+    She gave Mara the logbook. Mara gave her a peppermint.
+
+    The town never did fix the great lamp. But every year since, on the last Tuesday in November, the people of Vell climb the hundred and forty steps (all of them present now) and light one lantern each at the top of the tower. They light them slowly, one at a time, with a pause in between, so that anyone out on the water has time to notice.
+
+    Mara still keeps the station. The cable is older than ever, and the messages arrive more slowly every year. She does not mind. She sharpens her pencil, waits for the bell, and writes each word down as it comes.
+
+    *A slow letter is still a letter.* It just takes the scenic route.
     """),
     .photo,
     .map,

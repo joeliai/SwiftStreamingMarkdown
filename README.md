@@ -361,8 +361,12 @@ markdownView.openURL = { [weak self] url in
 A UIKit sample app lives in
 [`Examples/SwiftStreamingMarkdownSample`](Examples/SwiftStreamingMarkdownSample).
 It includes streaming demonstrations with playback controls and live metrics,
-an LLM chat built on a `UICollectionView` with self-sizing cells, a settings
-screen, and a logging `MarkdownListener` implementation. The sample
+an LLM chat, a settings screen, and a logging `MarkdownListener`
+implementation. The LLM chat is built on a `UICollectionView` with self-sizing
+cells: each sent message is pinned to the top, and a thinking indicator shows
+below it until the reply arrives after a simulated delay. Some replies are
+native views instead of Markdown: a photo loaded from the web, a map that can
+expand to show nearby places, and an expandable stock card. The sample
 Xcode project is generated from `Examples/SwiftStreamingMarkdownSample/project.yml`;
 run `make sample-project` to generate and open it in Xcode.
 

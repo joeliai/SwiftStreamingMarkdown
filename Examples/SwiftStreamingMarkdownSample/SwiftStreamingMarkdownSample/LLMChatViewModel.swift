@@ -31,7 +31,15 @@ final class LLMChatViewModel: ObservableObject {
     messages.append(ChatMessage(content: .user(text)))
   }
 
-  /// Append an assistant bubble and return its id so streaming updates can
+  /// Append an assistant message that shows a thinking indicator until its
+  /// reply arrives, and return its id so that the reply can replace it.
+  func appendThinkingMessage() -> UUID {
+    let message = ChatMessage(content: .thinking)
+    messages.append(message)
+    return message.id
+  }
+
+  /// Append an assistant message and return its id so streaming updates can
   /// target the same message as its content grows.
   func appendAssistantMessage(_ document: RenderableDocument) -> UUID {
     let message = ChatMessage(content: .assistant(document))
@@ -43,12 +51,21 @@ final class LLMChatViewModel: ObservableObject {
     guard let index = messages.firstIndex(where: { $0.id == id }) else { return }
     messages[index].content = .assistant(document)
   }
+
+  func updateAssistantMessage(id: UUID, widget: ChatWidget) {
+    guard let index = messages.firstIndex(where: { $0.id == id }) else { return }
+    messages[index].content = .widget(widget)
+  }
 }
 
 struct ChatMessage: Identifiable {
   enum Content: Equatable {
     case user(String)
+    /// An assistant reply that hasn't arrived yet.
+    case thinking
     case assistant(RenderableDocument)
+    /// An assistant reply shown with a native view instead of Markdown.
+    case widget(ChatWidget)
   }
 
   let id = UUID()

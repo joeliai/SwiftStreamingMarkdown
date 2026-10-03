@@ -6,40 +6,24 @@
 import SwiftStreamingMarkdown
 import UIKit
 
-/// An assistant reply: a leading bubble hosting a `DocumentView`. The cell's
-/// height follows the document through Auto Layout.
+/// An assistant reply: a `DocumentView` that spans the cell's full width, on
+/// the collection view's background. The cell's height follows the document
+/// through Auto Layout.
 final class AssistantMessageCell: UICollectionViewCell {
 
-  private let bubble = UIView()
   private let documentView = DocumentView()
 
   override init(frame: CGRect) {
     super.init(frame: frame)
-    bubble.backgroundColor = UIColor.secondaryLabel.withAlphaComponent(0.12)
-    bubble.layer.cornerRadius = 18
-    bubble.layer.cornerCurve = .continuous
+    documentView.translatesAutoresizingMaskIntoConstraints = false
+    contentView.addSubview(documentView)
 
-    for view in [bubble, documentView] {
-      view.translatesAutoresizingMaskIntoConstraints = false
-    }
-    contentView.addSubview(bubble)
-    bubble.addSubview(documentView)
-
-    // Fill the row up to 560 points, leaving at least 48 points of trailing space.
-    let preferredWidth = bubble.widthAnchor.constraint(equalTo: contentView.widthAnchor, constant: -48)
-    preferredWidth.priority = .defaultHigh
+    // The vertical padding sets the reply apart from the messages around it.
     NSLayoutConstraint.activate([
-      bubble.topAnchor.constraint(equalTo: contentView.topAnchor),
-      bubble.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-      bubble.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-      bubble.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -48),
-      bubble.widthAnchor.constraint(lessThanOrEqualToConstant: 560),
-      preferredWidth,
-
-      documentView.topAnchor.constraint(equalTo: bubble.topAnchor, constant: 14),
-      documentView.bottomAnchor.constraint(equalTo: bubble.bottomAnchor, constant: -14),
-      documentView.leadingAnchor.constraint(equalTo: bubble.leadingAnchor, constant: 14),
-      documentView.trailingAnchor.constraint(equalTo: bubble.trailingAnchor, constant: -14)
+      documentView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 14),
+      documentView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -14),
+      documentView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+      documentView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
     ])
   }
 

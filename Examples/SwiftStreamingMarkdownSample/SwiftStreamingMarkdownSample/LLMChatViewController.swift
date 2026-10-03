@@ -10,9 +10,10 @@ import UIKit
 /// A chat transcript in a `UICollectionView` with self-sizing cells. Each
 /// message the user sends is pinned to the top of the screen, and a thinking
 /// indicator shows below it until the mock reply arrives. Markdown replies
-/// render with a `DocumentView` that grows in place as the reply streams in;
-/// its cell resizes automatically. Other replies are native views: a photo
-/// loaded from the web, a map, and an expandable stock card.
+/// render with a `DocumentView` that grows in place as the reply streams in,
+/// updated by its cell, which observes the reply's view model; the cell
+/// resizes automatically. Other replies are native views: a photo loaded
+/// from the web, a map, and an expandable stock card.
 final class LLMChatViewController: UIViewController {
 
   private typealias DataSource = UICollectionViewDiffableDataSource<Int, UUID>
@@ -24,6 +25,8 @@ final class LLMChatViewController: UIViewController {
   private lazy var dataSource = makeDataSource()
   private let composer = MessageComposerView()
   private var renderedContents: [UUID: ChatMessage.Content] = [:]
+  /// The view models of Markdown replies, which their cells observe.
+  private var assistantReplies: [UUID: AssistantReplyViewModel] = [:]
   /// Stock cards and maps the user expanded, so that they stay expanded when
   /// their cells are reused.
   private var expandedWidgets: Set<UUID> = []
@@ -84,7 +87,10 @@ final class LLMChatViewController: UIViewController {
     }
     let assistantCell = UICollectionView.CellRegistration<AssistantMessageCell, UUID> { [weak self] cell, _, id in
       guard let self, case .assistant(let document)? = self.renderedContents[id] else { return }
-      cell.configure(document: document, config: self.interactor.markdownConfig)
+      let reply = self.assistantReplies[id] ?? AssistantReplyViewModel(document: document)
+      reply.setDocument(document)
+      self.assistantReplies[id] = reply
+      cell.configure(reply: reply, config: self.interactor.markdownConfig)
     }
     let imageCell = UICollectionView.CellRegistration<ImageMessageCell, UUID> { [weak self] cell, _, id in
       guard case .widget(.image(let url, let description))? = self?.renderedContents[id] else { return }
@@ -132,11 +138,12 @@ final class LLMChatViewController: UIViewController {
     }
   }
 
-  /// Appends new messages and updates the cells of messages whose content
-  /// changed: in place when the same kind of cell still shows the content,
-  /// such as a `DocumentView` that grows as a reply streams in, or with a new
-  /// cell when a reply replaces its thinking indicator. A newly sent user
-  /// message is scrolled to the top.
+  /// Appends new messages and updates the messages whose content changed. A
+  /// Markdown reply that grows as it streams in updates its view model, which
+  /// its cell observes, so the snapshot doesn't change. A message whose
+  /// content changes kind, such as a reply that replaces its thinking
+  /// indicator, gets a new cell. A newly sent user message is scrolled to the
+  /// top.
   private func render(_ messages: [ChatMessage]) {
     var snapshot = dataSource.snapshot()
     if snapshot.numberOfSections == 0 {
@@ -144,12 +151,12 @@ final class LLMChatViewController: UIViewController {
     }
     let existingIDs = Set(snapshot.itemIdentifiers)
     let newIDs = messages.map(\.id).filter { !existingIDs.contains($0) }
-    var reconfiguredIDs: [UUID] = []
     var reloadedIDs: [UUID] = []
     for message in messages where existingIDs.contains(message.id) {
       guard let oldContent = renderedContents[message.id], oldContent != message.content else { continue }
-      if CellKind(oldContent) == CellKind(message.content) {
-        reconfiguredIDs.append(message.id)
+      if case .assistant = oldContent, case .assistant(let document) = message.content {
+        // A reply whose cell isn't configured yet reads the document when it is.
+        assistantReplies[message.id]?.setDocument(document)
       } else {
         reloadedIDs.append(message.id)
       }
@@ -157,7 +164,6 @@ final class LLMChatViewController: UIViewController {
     renderedContents = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0.content) })
 
     snapshot.appendItems(newIDs)
-    snapshot.reconfigureItems(reconfiguredIDs)
     snapshot.reloadItems(reloadedIDs)
 
     let sentMessageID = newIDs.last { id in
